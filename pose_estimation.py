@@ -88,8 +88,10 @@ while True:
             imaxis = aruco.drawAxis(imaxis, mtx, dist, rvecs[i], tvecs[i], length_of_axis)
     try:
         x = (corners[0][0][0][0] + corners[0][0][2][0])/2
-        y = (corners[0][0][0][1] + corners[0][0][3][1])/2
-        distance = corners[0][0][3][1] - corners[0][0][0][1]
+        y = (corners[0][0][0][1] + corners[0][0][2][1])/2
+        distance = math.sqrt( math.pow(corners[0][0][3][1] - corners[0][0][0][1], 2) +
+                              math.pow(corners[0][0][3][0] - corners[0][0][0][0], 2))
+
         cv2.circle(imaxis, (int(corners[0][0][0][0]), int(corners[0][0][0][1])), 12, (255, 255, 0), 1)
         cv2.circle(imaxis, (int(corners[0][0][3][0]), int(corners[0][0][3][1])), 12, (0, 0, 255), 1)
         cv2.circle(imaxis, (int(x), int(y)), 12, (0, 255, 255), 2)
@@ -100,8 +102,9 @@ while True:
         print("non vedo")
 
 
-    width = 2400
-    dim = (width, int(width * 3 / 4))
+    width = 2400/4
+    ratio = 4/3
+    dim = (int(width), int(width / ratio))
     imaxis = cv2.resize(imaxis, dim, interpolation=cv2.INTER_AREA)
 
 
