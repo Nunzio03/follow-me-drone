@@ -11,10 +11,10 @@ board = aruco.CharucoBoard_create(7, 5, 1, .8, aruco_dict)
 
 ###### identification
 
-video_capture = cv2.VideoCapture(0)
-#drone = Tello()
-#drone.connect()
-#drone.streamon()
+#video_capture = cv2.VideoCapture(0)
+drone = Tello()
+drone.connect()
+drone.streamon()
 
 
 pc_mtx = np.array([[1.73223258e+03, 0.00000000e+00, 1.27300230e+03],
@@ -59,8 +59,8 @@ drone_dist = np.array([[-1.69684883e+00],
 mtx, dist = drone_mtx, drone_dist
 while True:
 
-    ret, frame = video_capture.read()
-    #frame = drone.get_frame_read().frame
+    #ret, frame = video_capture.read()
+    frame = drone.get_frame_read().frame
 
     #frame = cv2.undistort(src = frame, cameraMatrix = mtx, distCoeffs = dist)
 
@@ -89,15 +89,19 @@ while True:
     try:
         x = (corners[0][0][0][0] + corners[0][0][2][0])/2
         y = (corners[0][0][0][1] + corners[0][0][2][1])/2
-        distance = math.sqrt( math.pow(corners[0][0][3][1] - corners[0][0][0][1], 2) +
-                              math.pow(corners[0][0][3][0] - corners[0][0][0][0], 2))
+        square_side_dimension = math.sqrt(math.pow(corners[0][0][3][1] - corners[0][0][0][1], 2) +
+                                          math.pow(corners[0][0][3][0] - corners[0][0][0][0], 2))
 
         cv2.circle(imaxis, (int(corners[0][0][0][0]), int(corners[0][0][0][1])), 12, (255, 255, 0), 1)
         cv2.circle(imaxis, (int(corners[0][0][3][0]), int(corners[0][0][3][1])), 12, (0, 0, 255), 1)
         cv2.circle(imaxis, (int(x), int(y)), 12, (0, 255, 255), 2)
-        print(distance)
-        y = 7403.739 * math.pow(distance, -0.9864659)
-        imaxis = cv2.putText(imaxis, str(distance), (100, 200), 5, 5, (50, 255, 100))
+        print(square_side_dimension)
+
+        distance_cm_pc = 3317 * math.pow(square_side_dimension, -0.7468) + (-45.95)
+        distance_cm_drone = 1.129e+04 * math.pow(square_side_dimension, -0.9631) + (-11.26)
+
+        distance_cm = distance_cm_drone
+        imaxis = cv2.putText(imaxis, str(distance_cm), (100, 200), 5, 5, (50, 255, 100))
     except:
         print("non vedo")
 
