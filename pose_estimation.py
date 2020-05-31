@@ -3,6 +3,7 @@ import cv2, PIL, os
 from cv2 import aruco
 import matplotlib.pyplot as plt
 from tellopy import Tello
+import math
 
 
 aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
@@ -93,8 +94,8 @@ while True:
         cv2.circle(imaxis, (int(corners[0][0][3][0]), int(corners[0][0][3][1])), 12, (0, 0, 255), 1)
         cv2.circle(imaxis, (int(x), int(y)), 12, (0, 255, 255), 2)
         print(distance)
-
-        imaxis = cv2.putText(imaxis, str(distance), (50, 50), 1, 1, (0, 255, 0))
+        y = 7403.739 * math.pow(distance, -0.9864659)
+        imaxis = cv2.putText(imaxis, str(distance), (100, 200), 5, 5, (50, 255, 100))
     except:
         print("non vedo")
 
