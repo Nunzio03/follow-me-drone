@@ -1,7 +1,7 @@
 import numpy as np
 import cv2, PIL, os
 from cv2 import aruco
-from tellopy import Tello
+from djitellopy import Tello
 import math
 
 TOLERANCE_X = 30
