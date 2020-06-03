@@ -4,28 +4,29 @@ from cv2 import aruco
 from djitellopy import Tello
 import math
 
-TOLERANCE_X = 30
-TOLERANCE_Y = 30
-TOLERANCE_Z = 20
+TOLERANCE_X = 10
+TOLERANCE_Y = 10
+TOLERANCE_Z = 10
 SLOWDOWN_THRESHOLD_X = 50
-SLOWDOWN_THRESHOLD_Y = 50
-SLOWDONW_THRESHOLD_Z = 60
-DRONE_SPEED_X = 20
+SLOWDOWN_THRESHOLD_Y = 40
+SLOWDONW_THRESHOLD_Z = 30
+DRONE_SPEED_X = 25
 DRONE_SPEED_Y = 20
-DRONE_SPEED_Z = 10
+DRONE_SPEED_Z = 20
 SET_POINT_X = 960/2
 SET_POINT_Y = 720/2
-SET_POINT_Z = 150
+SET_POINT_Z = 175
 
 aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
-parameters =  aruco.DetectorParameters_create()
+parameters = aruco.DetectorParameters_create()
 
 # video source and calibration parameters setup
 
-video_capture = cv2.VideoCapture(0)
-#drone = Tello()
-#drone.connect()
-#drone.streamon()
+#video_capture = cv2.VideoCapture(0)
+drone = Tello()
+drone.connect()
+print(drone.get_battery())
+drone.streamon()
 
 
 pc_mtx = np.array([[1.73223258e+03, 0.00000000e+00, 1.27300230e+03],
@@ -70,16 +71,13 @@ drone_dist = np.array([[-1.69684883e+00],
 mtx, dist = drone_mtx, drone_dist
 
 # loop start
-
+drone.takeoff()
 while True:
 
-    ret, frame = video_capture.read()
+    #ret, frame = video_capture.read()
 
-    #frame = drone.get_frame_read().frame
+    frame = drone.get_frame_read().frame
 
-    #frame = cv2.undistort(src = frame, cameraMatrix = mtx, distCoeffs = dist)
-
-    #frame = cv2.flip(frame, 1)
 
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
@@ -136,21 +134,21 @@ while True:
         error_z = distance_cm - SET_POINT_Z
 
         if error_x < -TOLERANCE_X:
-            # print("sposta il drone alla sua SX")
+            print("sposta il drone alla sua SX")
             right_left_velocity = - DRONE_SPEED_X
 
         elif error_x > TOLERANCE_X:
-            # print("sposta il drone alla sua DX")
+            print("sposta il drone alla sua DX")
             right_left_velocity = DRONE_SPEED_X
         else:
             # print("OK")
             right_left_velocity = 0
 
         if error_y < -TOLERANCE_Y:
-            # print("sposta il drone in ALTO")
+            print("sposta il drone in ALTO")
             up_down_velocity = DRONE_SPEED_Y
         elif error_y > TOLERANCE_Y:
-            # print("sposta il drone in BASSO")
+            print("sposta il drone in BASSO")
             up_down_velocity = - DRONE_SPEED_Y
 
         else:
@@ -158,18 +156,28 @@ while True:
             up_down_velocity = 0
 
         if error_z < -TOLERANCE_Z:
-            # print("sposta il drone INDIETRO")
+            print("sposta il drone INDIETRO")
             front_back_velocity = - DRONE_SPEED_Z
         elif error_z > TOLERANCE_Z:
-            # print("sposta il drone in AVANTI ")
+            print("sposta il drone in AVANTI ")
             front_back_velocity = DRONE_SPEED_Z
 
         else:
             # print("OK")
             front_back_velocity = 0
 
+        if abs(error_x) < SLOWDOWN_THRESHOLD_X:
+            right_left_velocity = int(right_left_velocity / 2)
+        if abs(error_y) < SLOWDOWN_THRESHOLD_Y:
+            up_down_velocity = int(up_down_velocity / 2)
+        if abs(error_z) < SLOWDONW_THRESHOLD_Z:
+            front_back_velocity = int(front_back_velocity / 2)
+
     else:
         right_left_velocity, up_down_velocity, front_back_velocity = 0, 0, 0
+
+    drone.send_rc_control(right_left_velocity, front_back_velocity, up_down_velocity, 0)
+
 
     width = 2400/4
     ratio = 4/3
@@ -178,5 +186,7 @@ while True:
     cv2.imshow("markers", imaxis)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):  # quit from script
+        drone.land()
+        drone.get_battery()
         break
 
