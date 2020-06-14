@@ -4,18 +4,18 @@ from cv2 import aruco
 from djitellopy import Tello
 import math
 
-TOLERANCE_X = 10
-TOLERANCE_Y = 10
-TOLERANCE_Z = 10
-SLOWDOWN_THRESHOLD_X = 50
+TOLERANCE_X = 5
+TOLERANCE_Y = 5
+TOLERANCE_Z = 5
+SLOWDOWN_THRESHOLD_X = 20
 SLOWDOWN_THRESHOLD_Y = 40
-SLOWDONW_THRESHOLD_Z = 30
-DRONE_SPEED_X = 25
-DRONE_SPEED_Y = 20
+SLOWDONW_THRESHOLD_Z = 15
+DRONE_SPEED_X = 20
+DRONE_SPEED_Y = 15
 DRONE_SPEED_Z = 20
 SET_POINT_X = 960/2
 SET_POINT_Y = 720/2
-SET_POINT_Z = 175
+SET_POINT_Z = 75
 
 aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
 parameters = aruco.DetectorParameters_create()
@@ -71,7 +71,7 @@ drone_dist = np.array([[-1.69684883e+00],
 mtx, dist = drone_mtx, drone_dist
 
 # loop start
-drone.takeoff()
+#drone.takeoff()
 while True:
 
     #ret, frame = video_capture.read()
@@ -107,6 +107,7 @@ while True:
             y = (corners[0][0][0][1] + corners[0][0][2][1]) / 2
             square_side_dimension = math.sqrt(math.pow(corners[0][0][3][1] - corners[0][0][0][1], 2) +
                                               math.pow(corners[0][0][3][0] - corners[0][0][0][0], 2))
+
 
             cv2.circle(imaxis, (int(corners[0][0][0][0]), int(corners[0][0][0][1])), 12, (255, 255, 0), 1)
             cv2.circle(imaxis, (int(corners[0][0][3][0]), int(corners[0][0][3][1])), 12, (0, 0, 255), 1)
@@ -176,11 +177,11 @@ while True:
     else:
         right_left_velocity, up_down_velocity, front_back_velocity = 0, 0, 0
 
-    drone.send_rc_control(right_left_velocity, front_back_velocity, up_down_velocity, 0)
+    #drone.send_rc_control(0, front_back_velocity, up_down_velocity, right_left_velocity)
 
 
-    width = 2400/4
-    ratio = 4/3
+    width = 2400/2
+    ratio = 16/9
     dim = (int(width), int(width / ratio))
     imaxis = cv2.resize(imaxis, dim, interpolation=cv2.INTER_AREA)
     cv2.imshow("markers", imaxis)
