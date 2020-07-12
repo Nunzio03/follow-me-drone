@@ -105,34 +105,35 @@ while True:
             #print("psi:", -math.atan2(dst[0][2], dst[1][2])*180/math.pi)
             x = (corners[0][0][0][0] + corners[0][0][2][0]) / 2
             y = (corners[0][0][0][1] + corners[0][0][2][1]) / 2
-            square_side_dimension = math.sqrt(math.pow(corners[0][0][3][1] - corners[0][0][0][1], 2) +
-                                              math.pow(corners[0][0][3][0] - corners[0][0][0][0], 2))
-
-
-            cv2.circle(imaxis, (int(corners[0][0][0][0]), int(corners[0][0][0][1])), 12, (255, 255, 0), 1)
-            cv2.circle(imaxis, (int(corners[0][0][3][0]), int(corners[0][0][3][1])), 12, (0, 0, 255), 1)
-            cv2.circle(imaxis, (int(x), int(y)), 12, (0, 255, 255), 2)
+            square_side_dimension_px = math.sqrt(math.pow(corners[0][0][3][1] - corners[0][0][0][1], 2) +
+                                                 math.pow(corners[0][0][3][0] - corners[0][0][0][0], 2))
     try:
 
-        #print(square_side_dimension)
+        distance_cm_pc = 3317 * math.pow(square_side_dimension_px, -0.7468) + (-45.95)
+        frontal_distance_cm_drone = 1.129e+04 * math.pow(square_side_dimension_px, -0.9631) + (-11.26)
 
-        distance_cm_pc = 3317 * math.pow(square_side_dimension, -0.7468) + (-45.95)
-        distance_cm_drone = 1.129e+04 * math.pow(square_side_dimension, -0.9631) + (-11.26)
+        frontal_distance_cm = frontal_distance_cm_drone
+        cm_pix_ratio = 15 / square_side_dimension_px
+        horizontal_distance_cm = (x-SET_POINT_X)*cm_pix_ratio
+        vertical_distance_cm = (y-SET_POINT_Y)*cm_pix_ratio
 
-        distance_cm = distance_cm_drone
+        #imaxis = cv2.putText(imaxis, str(distance_cm), (100, 200), 5, 5, (250, 255, 250)) #distance frontal
 
-        imaxis = cv2.putText(imaxis, str(distance_cm), (100, 200), 5, 5, (250, 255, 250))
+        imaxis = cv2.putText(imaxis, str(horizontal_distance_cm), (100, 200), 5, 5, (250, 255, 250))
 
+        print("frontal: ", frontal_distance_cm)
+        print("horizontal: ", horizontal_distance_cm)
+        print("vertical: ", vertical_distance_cm)
     except:
         print("non vedo")
-        x, y, distance_cm = None, None, None
+        x, y, frontal_distance_cm = None, None, None
 
     cv2.circle(imaxis, (int(960/2), int(720/2)), 12, (0, 0, 255), 3)
-
+    x = None #debug
     if x is not None:
         error_x = x - SET_POINT_X
         error_y = y - SET_POINT_Y
-        error_z = distance_cm - SET_POINT_Z
+        error_z = frontal_distance_cm - SET_POINT_Z
 
         if error_x < -TOLERANCE_X:
             print("sposta il drone alla sua SX")
