@@ -127,9 +127,9 @@ while True:
 
     cv2.circle(imaxis, (int(960 / 2), int(720 / 2)), 12, (0, 0, 255), 3)
 
-     drone.send_rc_control(0, front_back_velocity, up_down_velocity, right_left_velocity)  # turn with yaw
+    drone.send_rc_control(0, front_back_velocity, up_down_velocity, right_left_velocity)  # turn with yaw
     # drone.send_rc_control(right_left_velocity, front_back_velocity, up_down_velocity, 0)  # turn with roll
- # test proport
+
     #frontal_error = frontal_distance_cm - SET_POINT_Z_cm
 
     #drone.go_xyz_speed(frontal_distance_cm, horizontal_distance_cm, vertical_distance_cm, 30)
