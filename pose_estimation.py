@@ -15,7 +15,7 @@ DRONE_SPEED_Y = 15
 DRONE_SPEED_Z = 20
 SET_POINT_X = 960 / 2
 SET_POINT_Y = 720 / 2
-SET_POINT_Z = 75
+SET_POINT_Z_cm = 75
 
 aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
 parameters = aruco.DetectorParameters_create()
@@ -109,10 +109,10 @@ while True:
         distance_cm_pc = 3317 * math.pow(square_side_dimension_px, -0.7468) + (-45.95)
         frontal_distance_cm_drone = 1.129e+04 * math.pow(square_side_dimension_px, -0.9631) + (-11.26)
 
-        frontal_distance_cm = frontal_distance_cm_drone
+        frontal_distance_cm = int(frontal_distance_cm_drone)
         cm_pix_ratio = 15 / square_side_dimension_px
-        horizontal_distance_cm = -(x - SET_POINT_X) * cm_pix_ratio
-        vertical_distance_cm = -(y - SET_POINT_Y) * cm_pix_ratio
+        horizontal_distance_cm = -int((x - SET_POINT_X) * cm_pix_ratio)
+        vertical_distance_cm = -int((y - SET_POINT_Y) * cm_pix_ratio)
 
         # imaxis = cv2.putText(imaxis, str(distance_cm), (100, 200), 5, 5, (250, 255, 250)) #distance frontal
 
@@ -123,62 +123,17 @@ while True:
         print("vertical: ", vertical_distance_cm)
     except:
         print("non vedo")
-        x, y, frontal_distance_cm = None, None, None
+        frontal_distance_cm, horizontal_distance_cm, vertical_distance_cm = 0, 0, 0
 
     cv2.circle(imaxis, (int(960 / 2), int(720 / 2)), 12, (0, 0, 255), 3)
 
-    if x is not None:
-        error_x = x - SET_POINT_X
-        error_y = y - SET_POINT_Y
-        error_z = frontal_distance_cm - SET_POINT_Z
+    # drone.send_rc_control(0, front_back_velocity, up_down_velocity, right_left_velocity)  # turn with yaw
+    # drone.send_rc_control(right_left_velocity, front_back_velocity, up_down_velocity, 0)  # turn with roll
 
-        if error_x < -TOLERANCE_X:
-            print("sposta il drone alla sua SX")
-            right_left_velocity = - DRONE_SPEED_X
+    frontal_error = frontal_distance_cm - SET_POINT_Z_cm
 
-        elif error_x > TOLERANCE_X:
-            print("sposta il drone alla sua DX")
-            right_left_velocity = DRONE_SPEED_X
-        else:
-            # print("OK")
-            right_left_velocity = 0
+    drone.go_xyz_speed(frontal_distance_cm, horizontal_distance_cm, vertical_distance_cm, 30)
 
-        if error_y < -TOLERANCE_Y:
-            print("sposta il drone in ALTO")
-            up_down_velocity = DRONE_SPEED_Y
-        elif error_y > TOLERANCE_Y:
-            print("sposta il drone in BASSO")
-            up_down_velocity = - DRONE_SPEED_Y
-
-        else:
-            # print("OK")
-            up_down_velocity = 0
-
-        if error_z < -TOLERANCE_Z:
-            print("sposta il drone INDIETRO")
-            front_back_velocity = - DRONE_SPEED_Z
-        elif error_z > TOLERANCE_Z:
-            print("sposta il drone in AVANTI ")
-            front_back_velocity = DRONE_SPEED_Z
-
-        else:
-            # print("OK")
-            front_back_velocity = 0
-
-        if abs(error_x) < SLOWDOWN_THRESHOLD_X:
-            right_left_velocity = int(right_left_velocity / 2)
-        if abs(error_y) < SLOWDOWN_THRESHOLD_Y:
-            up_down_velocity = int(up_down_velocity / 2)
-        if abs(error_z) < SLOWDONW_THRESHOLD_Z:
-            front_back_velocity = int(front_back_velocity / 2)
-
-    else:
-        right_left_velocity, up_down_velocity, front_back_velocity = 0, 0, 0
-        vertical_distance_cm = 0
-        horizontal_distance_cm = 0
-
-    drone.send_rc_control(0, front_back_velocity, up_down_velocity, right_left_velocity)  # turn with yaw
-    drone.send_rc_control(right_left_velocity, front_back_velocity, up_down_velocity, 0)  # turn with roll
 
     width = 2400 / 2
     ratio = 16 / 9
