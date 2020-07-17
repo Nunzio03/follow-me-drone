@@ -4,18 +4,17 @@ from cv2 import aruco
 from djitellopy import Tello
 import math
 
-TOLERANCE_X = 5
-TOLERANCE_Y = 5
-TOLERANCE_Z = 5
-SLOWDOWN_THRESHOLD_X = 20
-SLOWDOWN_THRESHOLD_Y = 40
-SLOWDONW_THRESHOLD_Z = 15
+TOLERANCE_X = 10
+TOLERANCE_Y = 10
+TOLERANCE_Z = 10
+
 DRONE_SPEED_X = 20
 DRONE_SPEED_Y = 15
 DRONE_SPEED_Z = 20
+
 SET_POINT_X = 960 / 2
 SET_POINT_Y = 720 / 2
-SET_POINT_Z_cm = 75
+SET_POINT_Z_cm = 125
 
 aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
 parameters = aruco.DetectorParameters_create()
@@ -80,6 +79,7 @@ while True:
 
     corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, aruco_dict,
                                                           parameters=parameters)
+
     # SUB PIXEL DETECTION
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 0.0001)
     for corner in corners:
@@ -96,7 +96,7 @@ while True:
     if tvecs is not None:
         for i in range(len(tvecs)):
             imaxis = aruco.drawAxis(imaxis, mtx, dist, rvecs[i], tvecs[i], length_of_axis)
-            dst, jacobian = cv2.Rodrigues(rvecs)
+            dst, jacobian = cv2.Rodrigues(rvecs[i])
             # print("phi:", math.atan2(dst[2][0], dst[2][1])*180/math.pi)
             # print("theta:", math.acos(dst[2][2])*180/math.pi)
             # print("psi:", -math.atan2(dst[0][2], dst[1][2])*180/math.pi)
@@ -112,28 +112,59 @@ while True:
         frontal_distance_cm = int(frontal_distance_cm_drone)
         cm_pix_ratio = 15 / square_side_dimension_px
         horizontal_distance_cm = -int((x - SET_POINT_X) * cm_pix_ratio)
-        vertical_distance_cm = -int((y - SET_POINT_Y) * cm_pix_ratio)
+        vertical_distance_cm = int((y - SET_POINT_Y) * cm_pix_ratio)
 
-        # imaxis = cv2.putText(imaxis, str(distance_cm), (100, 200), 5, 5, (250, 255, 250)) #distance frontal
+        imaxis = cv2.putText(imaxis, "x:" + str(horizontal_distance_cm), (100, 200), 5, 5, (250, 255, 250))
+        imaxis = cv2.putText(imaxis, "y:" + str(vertical_distance_cm), (100, 400), 5, 5, (250, 255, 250))
+        imaxis = cv2.putText(imaxis, "z:"+str(frontal_distance_cm), (100, 600), 5, 5, (250, 255, 250)) #distance frontal
 
-        imaxis = cv2.putText(imaxis, str(horizontal_distance_cm), (100, 200), 5, 5, (250, 255, 250))
-
-        print("frontal: ", frontal_distance_cm)
-        print("horizontal: ", horizontal_distance_cm)
-        print("vertical: ", vertical_distance_cm)
+        #print("frontal: ", frontal_distance_cm)
+        #print("horizontal: ", horizontal_distance_cm)
+        #print("vertical: ", vertical_distance_cm)
     except:
         print("non vedo")
         frontal_distance_cm, horizontal_distance_cm, vertical_distance_cm = 0, 0, 0
 
     cv2.circle(imaxis, (int(960 / 2), int(720 / 2)), 12, (0, 0, 255), 3)
 
+    frontal_error = frontal_distance_cm - SET_POINT_Z_cm
+
+    if horizontal_distance_cm > TOLERANCE_X:
+        right_left_velocity = -DRONE_SPEED_X
+        print("vai a sx")
+    elif horizontal_distance_cm < - TOLERANCE_X:
+        print("vai a dx")
+        right_left_velocity = DRONE_SPEED_X
+    else:
+        right_left_velocity = 0
+        print("ok x")
+
+    if vertical_distance_cm > TOLERANCE_Y:
+        print("vai giù")
+        up_down_velocity = -DRONE_SPEED_Y
+    elif vertical_distance_cm < - TOLERANCE_Y:
+        print("vai su")
+        up_down_velocity = DRONE_SPEED_Y
+    else:
+        up_down_velocity = 0
+        print("ok y")
+
+    if frontal_distance_cm - SET_POINT_Z_cm > TOLERANCE_Z:
+        print("vai indietro")
+        front_back_velocity = DRONE_SPEED_Z
+    elif frontal_distance_cm - SET_POINT_Z_cm < - TOLERANCE_Z:
+        print("vai avanti")
+        front_back_velocity = -DRONE_SPEED_Z
+    else:
+        front_back_velocity = 0
+        print("ok z")
+
+    imaxis = cv2.putText(imaxis, "x:" + str(right_left_velocity), (500, 200), 5, 5, (250, 255, 250))
+    imaxis = cv2.putText(imaxis, "y:" + str(up_down_velocity), (500, 400), 5, 5, (250, 255, 250))
+    imaxis = cv2.putText(imaxis, "z:" + str(front_back_velocity), (500, 600), 5, 5, (250, 255, 250))
+
     drone.send_rc_control(0, front_back_velocity, up_down_velocity, right_left_velocity)  # turn with yaw
     # drone.send_rc_control(right_left_velocity, front_back_velocity, up_down_velocity, 0)  # turn with roll
-
-    #frontal_error = frontal_distance_cm - SET_POINT_Z_cm
-
-    #drone.go_xyz_speed(frontal_distance_cm, horizontal_distance_cm, vertical_distance_cm, 30)
-
 
     width = 2400 / 2
     ratio = 16 / 9
