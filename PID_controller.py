@@ -25,7 +25,7 @@ class PIDController:
         elif parameter == "d":
             self.kd = value
 
-    def compute_action(self, set_point, error):
+    def compute_action(self, error):
         delay_pid = time.time() - self.start_time
         self.start_time = time.time()
 
@@ -42,8 +42,8 @@ class PIDController:
 
         # outx:setpoint = mapx : 100
         self.previous_error = error
-        bounded_output = int(100 * output_x / set_point)
-        return bounded_output
+        # bounded_output = int(100 * output_x / set_point)
+        return output_x
 
     def __str__(self):
         return f'{self.identifier} :[ P:{round(self.kp, 2)}, I:{round(self.ki,2)}, D:{round(self.kd,2)} ]'

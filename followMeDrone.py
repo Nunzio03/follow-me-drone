@@ -4,6 +4,7 @@ from cv2 import aruco
 from djitellopy import Tello
 import math
 from PID_controller import PIDController as PID
+from marker_detector import MarkerDetector
 
 TOLERANCE_X = 20
 TOLERANCE_Y = 20
@@ -42,6 +43,8 @@ video_capture = cv2.VideoCapture(0)
 #drone.connect()
 #print(drone.get_battery())
 #drone.streamon()
+
+# detection
 
 pc_mtx = np.array([[1.73223258e+03, 0.00000000e+00, 1.27300230e+03],
                    [0.00000000e+00, 1.73223258e+03, 1.03042217e+03],
@@ -83,6 +86,8 @@ drone_dist = np.array([[-1.69684883e+00],
 
 mtx, dist = drone_mtx, drone_dist
 
+detector = MarkerDetector(aruco_dict, parameters, mtx, dist)
+
 # loop start
 # drone.takeoff()
 while True:
@@ -91,89 +96,17 @@ while True:
 
     #frame = drone.get_frame_read().frame
 
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    image, horizontal_error, vertical_error, frontal_error = detector.detect_and_compute_error_values(frame,
+                                                                                                      SET_POINT_X,
+                                                                                                      SET_POINT_Y,
+                                                                                                      SET_POINT_Z_cm)
 
-    corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, aruco_dict,
-                                                          parameters=parameters)
-
-    # SUB PIXEL DETECTION
-    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 0.0001)
-    for corner in corners:
-        cv2.cornerSubPix(gray, corner, winSize=(3, 3), zeroZone=(-1, -1), criteria=criteria)
-
-    frame_markers = aruco.drawDetectedMarkers(frame.copy(), corners, ids)
-
-    size_of_marker = 0.15  # side lenght of the marker in meters
-    rvecs, tvecs, _objPoints = aruco.estimatePoseSingleMarkers(corners, size_of_marker, mtx, dist)
-
-    length_of_axis = 0.1
-    imaxis = aruco.drawDetectedMarkers(frame.copy(), corners, ids)
-
-    right_left_velocity, up_down_velocity, front_back_velocity = 0, 0, 0
-
-    if tvecs is not None:
-        for i in range(len(tvecs)):  # TO DO MARKER ID IDENTIFICATION
-            imaxis = aruco.drawAxis(imaxis, mtx, dist, rvecs[0], tvecs[0], length_of_axis)
-            dst, jacobian = cv2.Rodrigues(rvecs[i])
-            # print("phi:", math.atan2(dst[2][0], dst[2][1])*180/math.pi)
-            # print("theta:", math.acos(dst[2][2])*180/math.pi)
-            # print("psi:", -math.atan2(dst[0][2], dst[1][2])*180/math.pi)
-            x = (corners[0][0][0][0] + corners[0][0][2][0]) / 2
-            y = (corners[0][0][0][1] + corners[0][0][2][1]) / 2
-            square_side_dimension_px = math.sqrt(math.pow(corners[0][0][3][1] - corners[0][0][0][1], 2) +
-                                                 math.pow(corners[0][0][3][0] - corners[0][0][0][0], 2))
-
-            distance_cm_pc = 3317 * math.pow(square_side_dimension_px, -0.7468) + (-45.95)
-            frontal_distance_cm_drone = 1.129e+04 * math.pow(square_side_dimension_px, -0.9631) + (-11.26)
-
-            frontal_distance_cm = int(frontal_distance_cm_drone)
-            cm_pix_ratio = 15 / square_side_dimension_px
-            horizontal_error = -int((x - SET_POINT_X) * cm_pix_ratio)
-            vertical_error = int((y - SET_POINT_Y) * cm_pix_ratio)
-            frontal_error = frontal_distance_cm - SET_POINT_Z_cm
-
-            imaxis = cv2.putText(imaxis, "x:" + str(horizontal_error), (100, 200), 5, 5, (250, 255, 250))
-            imaxis = cv2.putText(imaxis, "y:" + str(vertical_error), (100, 400), 5, 5, (250, 255, 250))
-            imaxis = cv2.putText(imaxis, "z:"+str(frontal_distance_cm), (100, 600), 5, 5, (250, 255, 250))
-
-            # print("frontal: ", frontal_distance_cm)
-            # print("horizontal: ", horizontal_distance_cm)
-            # print("vertical: ", vertical_distance_cm)
-
-            if horizontal_error > TOLERANCE_X:
-                right_left_velocity = -DRONE_SPEED_X
-                print("vai a sx")
-            elif horizontal_error < - TOLERANCE_X:
-                print("vai a dx")
-                right_left_velocity = DRONE_SPEED_X
-            else:
-                right_left_velocity = 0
-                print("ok x")
-
-            if vertical_error > TOLERANCE_Y:
-                print("vai giù")
-                up_down_velocity = -DRONE_SPEED_Y
-            elif vertical_error < - TOLERANCE_Y:
-                print("vai su")
-                up_down_velocity = DRONE_SPEED_Y
-            else:
-                up_down_velocity = 0
-                print("ok y")
-
-            if frontal_distance_cm - SET_POINT_Z_cm > TOLERANCE_Z:
-                print("vai indietro")
-                front_back_velocity = DRONE_SPEED_Z
-            elif frontal_distance_cm - SET_POINT_Z_cm < - TOLERANCE_Z:
-                print("vai avanti")
-                front_back_velocity = -DRONE_SPEED_Z
-            else:
-                front_back_velocity = 0
-                print("ok z")
-
-    #drone.send_rc_control(0, front_back_velocity, up_down_velocity, right_left_velocity)  # turn with yaw
+    if horizontal_error is not None:
+        print("ok")
+        # drone.send_rc_control(0, front_back_velocity, up_down_velocity, right_left_velocity)  # turn with yaw
     # drone.send_rc_control(right_left_velocity, front_back_velocity, up_down_velocity, 0)  # turn with roll
     #battery_level = drone.get_battery()
-    cv2.circle(imaxis, (int(960 / 2), int(720 / 2)), 12, (0, 0, 255), 3)
+    cv2.circle(image, (int(960 / 2), int(720 / 2)), 12, (0, 0, 255), 3)
     #imaxis = cv2.putText(imaxis, "x:" + str(right_left_velocity), (500, 200), 5, 5, (250, 255, 250))
     #imaxis = cv2.putText(imaxis, "y:" + str(up_down_velocity), (500, 400), 5, 5, (250, 255, 250))
     #imaxis = cv2.putText(imaxis, "z:" + str(front_back_velocity), (500, 600), 5, 5, (250, 255, 250))
@@ -182,10 +115,10 @@ while True:
     width = 2400/3
     ratio = 16 / 9
     dim = (int(width), int(width / ratio))
-    imaxis = cv2.resize(imaxis, dim, interpolation=cv2.INTER_AREA)
-    imaxis = cv2.putText(imaxis, "PID:" + str(current_pid), (10, 200), 5, 1, (0, 255, 0))
+    image = cv2.resize(image, dim, interpolation=cv2.INTER_AREA)
+    image = cv2.putText(image, "PID:" + str(current_pid), (10, 200), 5, 1, (0, 255, 0))
 
-    cv2.imshow("markers", imaxis)
+    cv2.imshow("markers", image)
     key_pressed = cv2.waitKey(1)
     if key_pressed != -1:
         print("you pressed", chr(key_pressed))
@@ -201,6 +134,7 @@ while True:
         current_PID_parameter = 'i'
     elif key_pressed & 0xFF == ord("d"):
         current_PID_parameter = 'd'
+
     elif key_pressed & 0xFF == ord("x"):
         current_axis = 'x'
         current_pid = pidX
