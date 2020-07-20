@@ -4,17 +4,17 @@ from cv2 import aruco
 from djitellopy import Tello
 import math
 
-TOLERANCE_X = 10
-TOLERANCE_Y = 10
-TOLERANCE_Z = 10
+TOLERANCE_X = 20
+TOLERANCE_Y = 20
+TOLERANCE_Z = 20
 
-DRONE_SPEED_X = 20
-DRONE_SPEED_Y = 15
-DRONE_SPEED_Z = 20
+DRONE_SPEED_X = 25
+DRONE_SPEED_Y = 30
+DRONE_SPEED_Z = 25
 
 SET_POINT_X = 960 / 2
 SET_POINT_Y = 720 / 2
-SET_POINT_Z_cm = 125
+SET_POINT_Z_cm = 180
 
 aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
 parameters = aruco.DetectorParameters_create()
@@ -68,7 +68,7 @@ drone_dist = np.array([[-1.69684883e+00],
 mtx, dist = drone_mtx, drone_dist
 
 # loop start
-# drone.takeoff()
+drone.takeoff()
 while True:
 
     # ret, frame = video_capture.read()
@@ -93,8 +93,10 @@ while True:
     length_of_axis = 0.1
     imaxis = aruco.drawDetectedMarkers(frame.copy(), corners, ids)
 
+    right_left_velocity, up_down_velocity, front_back_velocity = 0, 0, 0
+
     if tvecs is not None:
-        for i in range(len(tvecs)):
+        for i in range(len(tvecs)):  # TO DO MARKER ID IDENTIFICATION
             imaxis = aruco.drawAxis(imaxis, mtx, dist, rvecs[0], tvecs[0], length_of_axis)
             dst, jacobian = cv2.Rodrigues(rvecs[i])
             # print("phi:", math.atan2(dst[2][0], dst[2][1])*180/math.pi)
@@ -153,18 +155,16 @@ while True:
                 front_back_velocity = 0
                 print("ok z")
 
-        else:
-            right_left_velocity, up_down_velocity, front_back_velocity = 0, 0, 0
+    drone.send_rc_control(0, front_back_velocity, up_down_velocity, right_left_velocity)  # turn with yaw
+    # drone.send_rc_control(right_left_velocity, front_back_velocity, up_down_velocity, 0)  # turn with roll
+    battery_level = drone.get_battery()
+    cv2.circle(imaxis, (int(960 / 2), int(720 / 2)), 12, (0, 0, 255), 3)
+    imaxis = cv2.putText(imaxis, "x:" + str(right_left_velocity), (500, 200), 5, 5, (250, 255, 250))
+    imaxis = cv2.putText(imaxis, "y:" + str(up_down_velocity), (500, 400), 5, 5, (250, 255, 250))
+    imaxis = cv2.putText(imaxis, "z:" + str(front_back_velocity), (500, 600), 5, 5, (250, 255, 250))
+    imaxis = cv2.putText(imaxis, "battery:" + str(battery_level).strip("\r\n"), (10, 700), 5, 1, (0, 255, 0))
 
-        drone.send_rc_control(0, front_back_velocity, up_down_velocity, right_left_velocity)  # turn with yaw
-        # drone.send_rc_control(right_left_velocity, front_back_velocity, up_down_velocity, 0)  # turn with roll
-
-        cv2.circle(imaxis, (int(960 / 2), int(720 / 2)), 12, (0, 0, 255), 3)
-        imaxis = cv2.putText(imaxis, "x:" + str(right_left_velocity), (500, 200), 5, 5, (250, 255, 250))
-        imaxis = cv2.putText(imaxis, "y:" + str(up_down_velocity), (500, 400), 5, 5, (250, 255, 250))
-        imaxis = cv2.putText(imaxis, "z:" + str(front_back_velocity), (500, 600), 5, 5, (250, 255, 250))
-
-    width = 2400 / 2
+    width = 2400/3
     ratio = 16 / 9
     dim = (int(width), int(width / ratio))
     imaxis = cv2.resize(imaxis, dim, interpolation=cv2.INTER_AREA)
