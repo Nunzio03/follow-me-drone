@@ -3,6 +3,7 @@ import cv2, PIL, os
 from cv2 import aruco
 from djitellopy import Tello
 import math
+from PID_controller import PIDController as PID
 
 TOLERANCE_X = 20
 TOLERANCE_Y = 20
@@ -16,16 +17,31 @@ SET_POINT_X = 960 / 2
 SET_POINT_Y = 720 / 2
 SET_POINT_Z_cm = 180
 
+# pid section
+pidX = PID('x')
+pidY = PID('y')
+pidZ = PID('z')
+
+# pid keys
+current_PID_parameter = 'p'
+current_axis = 'x'
+current_pid = pidX
+
+
+DELAY = 0.0002
+start_time = 0
+
+
 aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
 parameters = aruco.DetectorParameters_create()
 
 # video source and calibration parameters setup
 
-# video_capture = cv2.VideoCapture(0)
-drone = Tello()
-drone.connect()
-print(drone.get_battery())
-drone.streamon()
+video_capture = cv2.VideoCapture(0)
+#drone = Tello()
+#drone.connect()
+#print(drone.get_battery())
+#drone.streamon()
 
 pc_mtx = np.array([[1.73223258e+03, 0.00000000e+00, 1.27300230e+03],
                    [0.00000000e+00, 1.73223258e+03, 1.03042217e+03],
@@ -68,12 +84,12 @@ drone_dist = np.array([[-1.69684883e+00],
 mtx, dist = drone_mtx, drone_dist
 
 # loop start
-drone.takeoff()
+# drone.takeoff()
 while True:
 
-    # ret, frame = video_capture.read()
+    ret, frame = video_capture.read()
 
-    frame = drone.get_frame_read().frame
+    #frame = drone.get_frame_read().frame
 
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
@@ -112,33 +128,32 @@ while True:
 
             frontal_distance_cm = int(frontal_distance_cm_drone)
             cm_pix_ratio = 15 / square_side_dimension_px
-            horizontal_distance_cm = -int((x - SET_POINT_X) * cm_pix_ratio)
-            vertical_distance_cm = int((y - SET_POINT_Y) * cm_pix_ratio)
+            horizontal_error = -int((x - SET_POINT_X) * cm_pix_ratio)
+            vertical_error = int((y - SET_POINT_Y) * cm_pix_ratio)
+            frontal_error = frontal_distance_cm - SET_POINT_Z_cm
 
-            imaxis = cv2.putText(imaxis, "x:" + str(horizontal_distance_cm), (100, 200), 5, 5, (250, 255, 250))
-            imaxis = cv2.putText(imaxis, "y:" + str(vertical_distance_cm), (100, 400), 5, 5, (250, 255, 250))
+            imaxis = cv2.putText(imaxis, "x:" + str(horizontal_error), (100, 200), 5, 5, (250, 255, 250))
+            imaxis = cv2.putText(imaxis, "y:" + str(vertical_error), (100, 400), 5, 5, (250, 255, 250))
             imaxis = cv2.putText(imaxis, "z:"+str(frontal_distance_cm), (100, 600), 5, 5, (250, 255, 250))
 
             # print("frontal: ", frontal_distance_cm)
             # print("horizontal: ", horizontal_distance_cm)
             # print("vertical: ", vertical_distance_cm)
 
-            frontal_error = frontal_distance_cm - SET_POINT_Z_cm
-
-            if horizontal_distance_cm > TOLERANCE_X:
+            if horizontal_error > TOLERANCE_X:
                 right_left_velocity = -DRONE_SPEED_X
                 print("vai a sx")
-            elif horizontal_distance_cm < - TOLERANCE_X:
+            elif horizontal_error < - TOLERANCE_X:
                 print("vai a dx")
                 right_left_velocity = DRONE_SPEED_X
             else:
                 right_left_velocity = 0
                 print("ok x")
 
-            if vertical_distance_cm > TOLERANCE_Y:
+            if vertical_error > TOLERANCE_Y:
                 print("vai giù")
                 up_down_velocity = -DRONE_SPEED_Y
-            elif vertical_distance_cm < - TOLERANCE_Y:
+            elif vertical_error < - TOLERANCE_Y:
                 print("vai su")
                 up_down_velocity = DRONE_SPEED_Y
             else:
@@ -155,22 +170,67 @@ while True:
                 front_back_velocity = 0
                 print("ok z")
 
-    drone.send_rc_control(0, front_back_velocity, up_down_velocity, right_left_velocity)  # turn with yaw
+    #drone.send_rc_control(0, front_back_velocity, up_down_velocity, right_left_velocity)  # turn with yaw
     # drone.send_rc_control(right_left_velocity, front_back_velocity, up_down_velocity, 0)  # turn with roll
-    battery_level = drone.get_battery()
+    #battery_level = drone.get_battery()
     cv2.circle(imaxis, (int(960 / 2), int(720 / 2)), 12, (0, 0, 255), 3)
-    imaxis = cv2.putText(imaxis, "x:" + str(right_left_velocity), (500, 200), 5, 5, (250, 255, 250))
-    imaxis = cv2.putText(imaxis, "y:" + str(up_down_velocity), (500, 400), 5, 5, (250, 255, 250))
-    imaxis = cv2.putText(imaxis, "z:" + str(front_back_velocity), (500, 600), 5, 5, (250, 255, 250))
-    imaxis = cv2.putText(imaxis, "battery:" + str(battery_level).strip("\r\n"), (10, 700), 5, 1, (0, 255, 0))
+    #imaxis = cv2.putText(imaxis, "x:" + str(right_left_velocity), (500, 200), 5, 5, (250, 255, 250))
+    #imaxis = cv2.putText(imaxis, "y:" + str(up_down_velocity), (500, 400), 5, 5, (250, 255, 250))
+    #imaxis = cv2.putText(imaxis, "z:" + str(front_back_velocity), (500, 600), 5, 5, (250, 255, 250))
+    #imaxis = cv2.putText(imaxis, "battery:" + str(battery_level).strip("\r\n"), (10, 700), 5, 1, (0, 255, 0))
 
     width = 2400/3
     ratio = 16 / 9
     dim = (int(width), int(width / ratio))
     imaxis = cv2.resize(imaxis, dim, interpolation=cv2.INTER_AREA)
-    cv2.imshow("markers", imaxis)
+    imaxis = cv2.putText(imaxis, "PID:" + str(current_pid), (10, 200), 5, 1, (0, 255, 0))
 
-    if cv2.waitKey(1) & 0xFF == ord('q'):  # quit from script
-        drone.land()
-        drone.get_battery()
+    cv2.imshow("markers", imaxis)
+    key_pressed = cv2.waitKey(1)
+    if key_pressed != -1:
+        print("you pressed", chr(key_pressed))
+
+    if key_pressed & 0xFF == ord('q'):  # quit from script
+        #drone.land()
+        #drone.get_battery()
         break
+
+    elif key_pressed & 0xFF == ord("p"):
+        current_PID_parameter = 'p'
+    elif key_pressed & 0xFF == ord("i"):
+        current_PID_parameter = 'i'
+    elif key_pressed & 0xFF == ord("d"):
+        current_PID_parameter = 'd'
+    elif key_pressed & 0xFF == ord("x"):
+        current_axis = 'x'
+        current_pid = pidX
+    elif key_pressed & 0xFF == ord("y"):
+        current_axis = 'y'
+        current_pid = pidY
+    elif key_pressed & 0xFF == ord("z"):
+        current_axis = 'z'
+        current_pid = pidZ
+
+    elif key_pressed & 0xFF == ord("8"):
+        if current_axis == 'x':
+            pidX.increase_gain(current_PID_parameter, 0.01)
+        if current_axis == 'y':
+            pidY.increase_gain(current_PID_parameter, 0.01)
+        if current_axis == 'z':
+            pidZ.increase_gain(current_PID_parameter, 0.01)
+
+    elif key_pressed & 0xFF == ord("2"):
+        if current_axis == 'x':
+            pidX.increase_gain(current_PID_parameter, -0.01)
+        if current_axis == 'y':
+            pidY.increase_gain(current_PID_parameter, -0.01)
+        if current_axis == 'z':
+            pidZ.increase_gain(current_PID_parameter, -0.01)
+
+    elif key_pressed & 0xFF == ord("0"):
+        if current_axis == 'x':
+            pidX.set_gain(current_PID_parameter, 0)
+        if current_axis == 'y':
+            pidY.set_gain(current_PID_parameter, 0)
+        if current_axis == 'z':
+            pidZ.set_gain(current_PID_parameter, 0)
