@@ -1,5 +1,5 @@
 import numpy as np
-import cv2, PIL, os
+import cv2
 import time
 from cv2 import aruco
 from djitellopy import Tello
@@ -7,10 +7,9 @@ from gui_drawer import GuiDrawer
 
 from PID_controller import PIDController as PID
 from marker_detector import MarkerDetector
+from PID_parameters_tuner import PIDTuner
 
-TOLERANCE_X = 20
-TOLERANCE_Y = 20
-TOLERANCE_Z = 20
+start_time = time.time()
 
 DRONE_SPEED_X = 25
 DRONE_SPEED_Y = 30
@@ -26,15 +25,9 @@ pidY = PID('y')
 pidZ = PID('z')
 
 # pid keys
-current_PID_parameter = 'p'
-current_axis = 'x'
-current_pid = pidX
-
+tuner = PIDTuner(pidX, pidY, pidZ)
 drawer = GuiDrawer()
-
-DELAY = 0.0002
-start_time = 0
-
+current_pid, current_parameter = pidX, 'p'
 
 aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
 parameters = aruco.DetectorParameters_create()
@@ -113,7 +106,7 @@ while True:
 
         # drone.send_rc_control(0, front_back_velocity, up_down_velocity, right_left_velocity)  # turn with yaw
 
-    drawer.draw_current_PID(image, current_pid, current_PID_parameter)
+    drawer.draw_current_PID(image, current_pid, current_parameter)
     drawer.draw_setpoint(image, SET_POINT_X, SET_POINT_Y)
     if time.time() - start_time >= 5:
         battery_level = drone.get_battery()
@@ -135,43 +128,7 @@ while True:
         drone.get_battery()
         break
 
-    elif key_pressed & 0xFF == ord("p"):
-        current_PID_parameter = 'p'
-    elif key_pressed & 0xFF == ord("i"):
-        current_PID_parameter = 'i'
-    elif key_pressed & 0xFF == ord("d"):
-        current_PID_parameter = 'd'
-
-    elif key_pressed & 0xFF == ord("x"):
-        current_axis = 'x'
-        current_pid = pidX
-    elif key_pressed & 0xFF == ord("y"):
-        current_axis = 'y'
-        current_pid = pidY
-    elif key_pressed & 0xFF == ord("z"):
-        current_axis = 'z'
-        current_pid = pidZ
-
-    elif key_pressed & 0xFF == ord("8"):
-        if current_axis == 'x':
-            pidX.increase_gain(current_PID_parameter, 0.01)
-        if current_axis == 'y':
-            pidY.increase_gain(current_PID_parameter, 0.01)
-        if current_axis == 'z':
-            pidZ.increase_gain(current_PID_parameter, 0.01)
-
-    elif key_pressed & 0xFF == ord("2"):
-        if current_axis == 'x':
-            pidX.increase_gain(current_PID_parameter, -0.01)
-        if current_axis == 'y':
-            pidY.increase_gain(current_PID_parameter, -0.01)
-        if current_axis == 'z':
-            pidZ.increase_gain(current_PID_parameter, -0.01)
-
-    elif key_pressed & 0xFF == ord("0"):
-        if current_axis == 'x':
-            pidX.set_gain(current_PID_parameter, 0)
-        if current_axis == 'y':
-            pidY.set_gain(current_PID_parameter, 0)
-        if current_axis == 'z':
-            pidZ.set_gain(current_PID_parameter, 0)
+    else:
+        current_pid = tuner.get_pid(key_pressed)
+        current_parameter = tuner.get_parameter(key_pressed)
+        tuner.tune(key_pressed)
