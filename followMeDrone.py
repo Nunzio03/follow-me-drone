@@ -113,7 +113,7 @@ while True:
 
         # drone.send_rc_control(0, front_back_velocity, up_down_velocity, right_left_velocity)  # turn with yaw
 
-    drawer.draw_current_PID(image, current_pid)
+    drawer.draw_current_PID(image, current_pid, current_PID_parameter)
     drawer.draw_setpoint(image, SET_POINT_X, SET_POINT_Y)
     if time.time() - start_time >= 5:
         battery_level = drone.get_battery()

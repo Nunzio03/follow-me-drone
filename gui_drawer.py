@@ -18,8 +18,8 @@ class GuiDrawer:
         cv2.circle(image, (int(setpointX), int(setpointY)), 12, (0, 0, 255), 3)
 
     @staticmethod
-    def draw_current_PID(image, current_pid):
-        cv2.putText(image, "PID:" + str(current_pid), (10, 200), 5, 1, (0, 255, 0))
+    def draw_current_PID(image, current_pid, current_parameter):
+        cv2.putText(image, "PID:" + str(current_pid)+ " editing "+current_parameter, (10, 200), 5, 1, (0, 255, 0))
 
     @staticmethod
     def draw_PID_output(image, out_x, out_y, out_z):
