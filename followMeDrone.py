@@ -4,7 +4,7 @@ import time
 from cv2 import aruco
 from djitellopy import Tello
 from gui_drawer import GuiDrawer
-import math
+
 from PID_controller import PIDController as PID
 from marker_detector import MarkerDetector
 
@@ -44,7 +44,7 @@ parameters = aruco.DetectorParameters_create()
 # video_capture = cv2.VideoCapture(0)
 drone = Tello()
 drone.connect()
-#print(drone.get_battery())
+battery_level = drone.get_battery()
 drone.streamon()
 
 # detection
@@ -95,7 +95,7 @@ detector = MarkerDetector(aruco_dict, parameters, mtx, dist)
 # drone.takeoff()
 while True:
 
-    #ret, frame = video_capture.read()
+    # ret, frame = video_capture.read()
 
     frame = drone.get_frame_read().frame
 
@@ -105,26 +105,25 @@ while True:
                                                                                                       SET_POINT_Z_cm)
 
     if horizontal_error is not None:
-        print("ok")
-        drawer.draw_errors(image, horizontal_error, vertical_error, frontal_error)
+        drawer.draw_errors(image, horizontal_error, vertical_error, frontal_error, frontal_error+SET_POINT_Z_cm)
         action_x = pidX.compute_action(horizontal_error)
-
-        #action_y = pidY.compute_action(vertical_error)
-        #action_z = pidZ.compute_action(frontal_error)
-        #image = drawer.draw_PID_output(image, action_x, action_y, action_z)
+        action_y = pidY.compute_action(vertical_error)
+        action_z = pidZ.compute_action(frontal_error)
+        drawer.draw_PID_output(image, action_x, action_y, action_z)
 
         # drone.send_rc_control(0, front_back_velocity, up_down_velocity, right_left_velocity)  # turn with yaw
-    # drone.send_rc_control(right_left_velocity, front_back_velocity, up_down_velocity, 0)  # turn with roll
-    #battery_level = drone.get_battery()
 
+    drawer.draw_current_PID(image, current_pid)
+    drawer.draw_setpoint(image, SET_POINT_X, SET_POINT_Y)
+    if time.time() - start_time >= 5:
+        battery_level = drone.get_battery()
+        start_time = time.time()
+    drawer.draw_battery_level(image, battery_level)
 
     width = 2400/3
     ratio = 16 / 9
     dim = (int(width), int(width / ratio))
     image = cv2.resize(image, dim, interpolation=cv2.INTER_AREA)
-    image = drawer.draw_current_PID(image, current_pid)
-    cv2.circle(image, (int(960 / 2), int(720 / 2)), 12, (0, 0, 255), 3)
-    image = drawer.draw_setpoint(image, SET_POINT_X, SET_POINT_Y)
 
     cv2.imshow("markers", image)
 
@@ -132,8 +131,8 @@ while True:
     key_pressed = cv2.waitKey(1)
 
     if key_pressed & 0xFF == ord('q'):  # quit from script
-        #drone.land()
-        #drone.get_battery()
+        drone.land()
+        drone.get_battery()
         break
 
     elif key_pressed & 0xFF == ord("p"):

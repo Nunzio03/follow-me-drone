@@ -30,7 +30,7 @@ class PIDController:
         self.start_time = time.time()
 
         self.integral = self.integral + error * delay_pid
-        print(self.integral)
+
         if self.integral > 100000:
             self.integral = 100000
         elif self.integral < -100000:
