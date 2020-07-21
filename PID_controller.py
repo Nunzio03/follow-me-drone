@@ -30,20 +30,20 @@ class PIDController:
         self.start_time = time.time()
 
         self.integral = self.integral + error * delay_pid
-
-        if self.integral > 100:
-            self.integral = 100
-        elif self.integral < -100:
-            self.integral = -100
+        print(self.integral)
+        if self.integral > 100000:
+            self.integral = 100000
+        elif self.integral < -100000:
+            self.integral = -100000
 
         derivative = (error - self.previous_error) / delay_pid
 
-        output_x = self.kp * error + self.ki * self.integral + self.kd * derivative
+        output = self.kp * error + self.ki * self.integral + self.kd * derivative
 
         # outx:setpoint = mapx : 100
         self.previous_error = error
-        # bounded_output = int(100 * output_x / set_point)
-        return output_x
+        # bounded_output = int(100 * output / set_point)
+        return output
 
     def __str__(self):
         return f'{self.identifier} :[ P:{round(self.kp, 2)}, I:{round(self.ki,2)}, D:{round(self.kd,2)} ]'

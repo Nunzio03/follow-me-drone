@@ -1,7 +1,9 @@
 import numpy as np
 import cv2, PIL, os
+import time
 from cv2 import aruco
 from djitellopy import Tello
+from gui_drawer import GuiDrawer
 import math
 from PID_controller import PIDController as PID
 from marker_detector import MarkerDetector
@@ -28,6 +30,7 @@ current_PID_parameter = 'p'
 current_axis = 'x'
 current_pid = pidX
 
+drawer = GuiDrawer()
 
 DELAY = 0.0002
 start_time = 0
@@ -38,11 +41,11 @@ parameters = aruco.DetectorParameters_create()
 
 # video source and calibration parameters setup
 
-video_capture = cv2.VideoCapture(0)
-#drone = Tello()
-#drone.connect()
+# video_capture = cv2.VideoCapture(0)
+drone = Tello()
+drone.connect()
 #print(drone.get_battery())
-#drone.streamon()
+drone.streamon()
 
 # detection
 
@@ -92,9 +95,9 @@ detector = MarkerDetector(aruco_dict, parameters, mtx, dist)
 # drone.takeoff()
 while True:
 
-    ret, frame = video_capture.read()
+    #ret, frame = video_capture.read()
 
-    #frame = drone.get_frame_read().frame
+    frame = drone.get_frame_read().frame
 
     image, horizontal_error, vertical_error, frontal_error = detector.detect_and_compute_error_values(frame,
                                                                                                       SET_POINT_X,
@@ -103,25 +106,30 @@ while True:
 
     if horizontal_error is not None:
         print("ok")
+        drawer.draw_errors(image, horizontal_error, vertical_error, frontal_error)
+        action_x = pidX.compute_action(horizontal_error)
+
+        #action_y = pidY.compute_action(vertical_error)
+        #action_z = pidZ.compute_action(frontal_error)
+        #image = drawer.draw_PID_output(image, action_x, action_y, action_z)
+
         # drone.send_rc_control(0, front_back_velocity, up_down_velocity, right_left_velocity)  # turn with yaw
     # drone.send_rc_control(right_left_velocity, front_back_velocity, up_down_velocity, 0)  # turn with roll
     #battery_level = drone.get_battery()
-    cv2.circle(image, (int(960 / 2), int(720 / 2)), 12, (0, 0, 255), 3)
-    #imaxis = cv2.putText(imaxis, "x:" + str(right_left_velocity), (500, 200), 5, 5, (250, 255, 250))
-    #imaxis = cv2.putText(imaxis, "y:" + str(up_down_velocity), (500, 400), 5, 5, (250, 255, 250))
-    #imaxis = cv2.putText(imaxis, "z:" + str(front_back_velocity), (500, 600), 5, 5, (250, 255, 250))
-    #imaxis = cv2.putText(imaxis, "battery:" + str(battery_level).strip("\r\n"), (10, 700), 5, 1, (0, 255, 0))
+
 
     width = 2400/3
     ratio = 16 / 9
     dim = (int(width), int(width / ratio))
     image = cv2.resize(image, dim, interpolation=cv2.INTER_AREA)
-    image = cv2.putText(image, "PID:" + str(current_pid), (10, 200), 5, 1, (0, 255, 0))
+    image = drawer.draw_current_PID(image, current_pid)
+    cv2.circle(image, (int(960 / 2), int(720 / 2)), 12, (0, 0, 255), 3)
+    image = drawer.draw_setpoint(image, SET_POINT_X, SET_POINT_Y)
 
     cv2.imshow("markers", image)
+
+    # key hadling
     key_pressed = cv2.waitKey(1)
-    if key_pressed != -1:
-        print("you pressed", chr(key_pressed))
 
     if key_pressed & 0xFF == ord('q'):  # quit from script
         #drone.land()

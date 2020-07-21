@@ -64,8 +64,9 @@ class MarkerDetector:
 
         imaxis, x, y, square_side_dimension_px = self.detect(frame)
         if x is not None:
-
-            return imaxis, self.compute_error_values(x, y, square_side_dimension_px, set_point_x, set_point_y,
-                                                     set_point_z)
+            horizontal_error, vertical_error, frontal_error = self.compute_error_values(x, y, square_side_dimension_px,
+                                                                                        set_point_x, set_point_y,
+                                                                                        set_point_z)
+            return imaxis, horizontal_error, vertical_error, frontal_error
         else:
             return imaxis, None, None, None
