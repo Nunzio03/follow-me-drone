@@ -54,8 +54,8 @@ class MarkerDetector:
 
         frontal_distance_cm = int(frontal_distance_cm_drone)
         cm_pix_ratio = 15 / square_side_dimension_px
-        horizontal_error = -int((x - set_point_x) * cm_pix_ratio)
-        vertical_error = int((y - set_point_y) * cm_pix_ratio)
+        horizontal_error = int((set_point_x - x) * cm_pix_ratio)
+        vertical_error = int((set_point_y - y) * cm_pix_ratio)
         frontal_error = frontal_distance_cm - set_point_z
         return horizontal_error, vertical_error, frontal_error
 

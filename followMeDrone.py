@@ -17,7 +17,7 @@ DRONE_SPEED_Z = 25
 
 SET_POINT_X = 960 / 2
 SET_POINT_Y = 720 / 2
-SET_POINT_Z_cm = 180
+SET_POINT_Z_cm = 100
 
 # pid section
 pidX = PID('x')

@@ -1,6 +1,15 @@
 import time
 
 
+def same_sign(a, b):
+    if a == 0 or b == 0:
+        return True
+    elif a/abs(a) == b/abs(b):
+        return True
+    else:
+        return False
+
+
 class PIDController:
     def __init__(self, identifier):
         self.kp, self.ki, self.kd = 0, 0, 0
@@ -8,6 +17,8 @@ class PIDController:
         self.previous_error = 0
         self.integral = 0
         self.start_time = time.time()
+        self.is_in_saturation = False
+        self.previous_output = 0
 
     def increase_gain(self, parameter, value):
         if parameter == "p":
@@ -29,20 +40,23 @@ class PIDController:
         delay_pid = time.time() - self.start_time
         self.start_time = time.time()
 
-        self.integral = self.integral + error * delay_pid
-
-        if self.integral > 100000:
-            self.integral = 100000
-        elif self.integral < -100000:
-            self.integral = -100000
+        if not(self.is_in_saturation and same_sign(error, self.previous_output)):
+            self.integral = self.integral + error * delay_pid
 
         derivative = (error - self.previous_error) / delay_pid
 
         output = self.kp * error + self.ki * self.integral + self.kd * derivative
 
-        # outx:setpoint = mapx : 100
         self.previous_error = error
-        # bounded_output = int(100 * output / set_point)
+        if output > 100:
+            output = 100
+            self.is_in_saturation = True
+        elif output < -100:
+            output = -100
+            self.is_in_saturation = True
+        else:
+            self.is_in_saturation = False
+            self.previous_output = output
         return output
 
     def __str__(self):
