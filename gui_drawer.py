@@ -22,7 +22,7 @@ class GuiDrawer:
         cv2.putText(image, "PID:" + str(current_pid)+ " editing "+current_parameter, (10, 200), 5, 1, (0, 255, 0))
 
     @staticmethod
-    def draw_PID_output(image, out_x, out_y, out_z):
+    def draw_controller_output(image, out_x, out_y, out_z):
         cv2.putText(image, "action x:" + str(round(out_x, 3)), (450, 20), 5, 1, (250, 50, 50))
         cv2.putText(image, "action y:" + str(round(out_y, 3)), (450, 40), 5, 1, (250, 50, 50))
         cv2.putText(image, "action z:" + str(round(out_z, 3)), (450, 60), 5, 1, (250, 50, 50))

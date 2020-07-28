@@ -8,6 +8,7 @@ from gui_drawer import GuiDrawer
 from PID_controller import PIDController as PID
 from marker_detector import MarkerDetector
 from PID_parameters_tuner import PIDTuner
+from BangBang_controller import BangBangController
 
 start_time = time.time()
 
@@ -15,15 +16,20 @@ DRONE_SPEED_X = 25
 DRONE_SPEED_Y = 30
 DRONE_SPEED_Z = 25
 
+
+
 SET_POINT_X = 960 / 2
 SET_POINT_Y = 720 / 2
-SET_POINT_Z_cm = 100
+SET_POINT_Z_cm = 50
 
 # pid section
 pidX = PID('x')
 pidY = PID('y')
 pidZ = PID('z')
 
+cx = BangBangController(SET_POINT_X, 20, 30)
+cy = BangBangController(SET_POINT_Y, 20, 30)
+cz = BangBangController(SET_POINT_Z_cm, 20, 30)
 # pid keys
 tuner = PIDTuner(pidX, pidY, pidZ)
 drawer = GuiDrawer()
@@ -85,7 +91,7 @@ mtx, dist = drone_mtx, drone_dist
 detector = MarkerDetector(aruco_dict, parameters, mtx, dist)
 
 # loop start
-# drone.takeoff()
+drone.takeoff()
 while True:
 
     # ret, frame = video_capture.read()
@@ -99,12 +105,15 @@ while True:
 
     if horizontal_error is not None:
         drawer.draw_errors(image, horizontal_error, vertical_error, frontal_error, frontal_error+SET_POINT_Z_cm)
-        action_x = pidX.compute_action(horizontal_error)
-        action_y = pidY.compute_action(vertical_error)
-        action_z = pidZ.compute_action(frontal_error)
-        drawer.draw_PID_output(image, action_x, action_y, action_z)
+        #action_x = pidX.compute_action(horizontal_error)
+        #action_y = pidY.compute_action(vertical_error)
+        #action_z = pidZ.compute_action(frontal_error)
+        action_x = cx.compute_action(horizontal_error)
+        action_y = cy.compute_action(-vertical_error)
+        action_z = cz.compute_action(-frontal_error)
+        drawer.draw_controller_output(image, action_x, action_y, action_z)
 
-        # drone.send_rc_control(0, front_back_velocity, up_down_velocity, right_left_velocity)  # turn with yaw
+        drone.send_rc_control(0, action_z, action_y, action_x)  # turn with yaw
 
     drawer.draw_current_PID(image, current_pid, current_parameter)
     drawer.draw_setpoint(image, SET_POINT_X, SET_POINT_Y)
