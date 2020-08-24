@@ -6,7 +6,7 @@ from djitellopy import Tello
 from gui_drawer import GuiDrawer
 
 from PID_controller import PIDController as PID
-from marker_detector import MarkerDetector
+from marker_distance_estimator import MarkerDetector
 from PID_parameters_tuner import PIDTuner
 from BangBang_controller import BangBangController
 
@@ -91,7 +91,7 @@ mtx, dist = drone_mtx, drone_dist
 detector = MarkerDetector(aruco_dict, parameters, mtx, dist)
 
 # loop start
-drone.takeoff()
+#drone.takeoff()
 while True:
 
     # ret, frame = video_capture.read()

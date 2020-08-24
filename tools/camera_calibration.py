@@ -5,15 +5,14 @@ import matplotlib.pyplot as plt
 
 aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
 board = aruco.CharucoBoard_create(7, 5, 1, .8, aruco_dict)
-datadir = "./dronePhotos/"
+datadir = "./drone calibration photos/"
 
 images = np.array([datadir + f for f in os.listdir(datadir) if f.endswith(".png") ])
 
+
 def read_chessboards(images):
-    """
-    Charuco base pose estimation.
-    """
-    print("POSE ESTIMATION STARTS:")
+    #reading the chessboard
+    print("POSE ESTIMATION STARTED...")
     allCorners = []
     allIds = []
     decimator = 0
@@ -21,7 +20,8 @@ def read_chessboards(images):
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 0.00001)
 
     for im in images:
-        print("=> Processing image {0}".format(im))
+        # print("=> Processing image {0}".format(im))
+        print('.', end="")
         frame = cv2.imread(im)
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         corners, ids, rejectedImgPoints = cv2.aruco.detectMarkers(gray, aruco_dict)
@@ -50,7 +50,6 @@ def calibrate_camera(allCorners,allIds,imsize):
     """
     Calibrates the camera using the dected corners.
     """
-    print("CAMERA CALIBRATION")
 
     cameraMatrixInit = np.array([[ 1000.,    0., imsize[0]/2.],
                                  [    0., 1000., imsize[1]/2.],
@@ -58,7 +57,7 @@ def calibrate_camera(allCorners,allIds,imsize):
 
     distCoeffsInit = np.zeros((5,1))
     flags = (cv2.CALIB_USE_INTRINSIC_GUESS + cv2.CALIB_RATIONAL_MODEL + cv2.CALIB_FIX_ASPECT_RATIO)
-    #flags = (cv2.CALIB_RATIONAL_MODEL)
+
     (ret, camera_matrix, distortion_coefficients0,
      rotation_vectors, translation_vectors,
      stdDeviationsIntrinsics, stdDeviationsExtrinsics,
@@ -76,19 +75,4 @@ def calibrate_camera(allCorners,allIds,imsize):
 
 
 ret, mtx, dist, rvecs, tvecs = calibrate_camera(allCorners,allIds,imsize)
-
-print(mtx)
-print(dist)
-i=13 # select image id
-plt.figure()
-frame = cv2.imread(images[i])
-img_undist = cv2.undistort(frame,mtx,dist,None)
-plt.subplot(1,2,1)
-plt.imshow(frame)
-plt.title("Raw image")
-plt.axis("off")
-plt.subplot(1,2,2)
-plt.imshow(img_undist)
-plt.title("Corrected image")
-plt.axis("off")
-plt.show()
+print("\n CALIBRATION COMPLETED")

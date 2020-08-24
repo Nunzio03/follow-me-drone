@@ -31,7 +31,7 @@ class MarkerDetector:
         imaxis = aruco.drawDetectedMarkers(frame.copy(), corners, ids)
 
         if tvecs is not None:
-            for i in range(len(tvecs)):  # TO DO MARKER ID IDENTIFICATION
+            for i in range(len(tvecs)):
                 imaxis = aruco.drawAxis(imaxis, self.mtx, self.dist, rvecs[i], tvecs[i], length_of_axis)
                 # dst, jacobian = cv2.Rodrigues(rvecs[i])
                 # print("phi:", math.atan2(dst[2][0], dst[2][1])*180/math.pi)
@@ -47,13 +47,13 @@ class MarkerDetector:
             return frame, None, None, None
 
     @staticmethod
-    def compute_error_values(x, y, square_side_dimension_px, set_point_x, set_point_y, set_point_z):
+    def distance_estimator(square_side_dimension_px):
+        return 1.129e+04 * math.pow(square_side_dimension_px, -0.9631) + (-11.26)
 
-        # distance_cm_pc = 3317 * math.pow(square_side_dimension_px, -0.7468) + (-45.95)
-        frontal_distance_cm_drone = 1.129e+04 * math.pow(square_side_dimension_px, -0.9631) + (-11.26)
+    def compute_error_values(self, x, y, square_side_dimension_px, set_point_x, set_point_y, set_point_z):
 
-        frontal_distance_cm = int(frontal_distance_cm_drone)
-        cm_pix_ratio = 15 / square_side_dimension_px
+        frontal_distance_cm = int(self.distance_estimator(square_side_dimension_px))
+        cm_pix_ratio = 15 / square_side_dimension_px  # 15 [cm] / marker dimension [pixel]
         horizontal_error = int((set_point_x - x) * cm_pix_ratio)
         vertical_error = int((set_point_y - y) * cm_pix_ratio)
         frontal_error = frontal_distance_cm - set_point_z
