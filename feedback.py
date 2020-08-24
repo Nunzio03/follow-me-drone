@@ -36,8 +36,6 @@ class MarkerDetector:
         for corner in corners:
             cv2.cornerSubPix(gray, corner, winSize=(3, 3), zeroZone=(-1, -1), criteria=criteria)
 
-        # frame_markers = aruco.drawDetectedMarkers(frame.copy(), corners, ids)
-
         size_of_marker = 0.15  # side lenght of the marker in meters
         rvecs, tvecs, _objPoints = aruco.estimatePoseSingleMarkers(corners, size_of_marker, self.mtx, self.dist)
 
@@ -47,10 +45,6 @@ class MarkerDetector:
         if tvecs is not None:
             for i in range(len(tvecs)):
                 imaxis = aruco.drawAxis(imaxis, self.mtx, self.dist, rvecs[i], tvecs[i], length_of_axis)
-                # dst, jacobian = cv2.Rodrigues(rvecs[i])
-                # print("phi:", math.atan2(dst[2][0], dst[2][1])*180/math.pi)
-                # print("theta:", math.acos(dst[2][2])*180/math.pi)
-                # print("psi:", -math.atan2(dst[0][2], dst[1][2])*180/math.pi)
                 x = (corners[0][0][0][0] + corners[0][0][2][0]) / 2
                 y = (corners[0][0][0][1] + corners[0][0][2][1]) / 2
                 square_side_dimension_px = math.sqrt(math.pow(corners[0][0][3][1] - corners[0][0][0][1], 2) +
