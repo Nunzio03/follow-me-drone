@@ -1,13 +1,12 @@
-import safeopt
 
 import GPy
 import numpy as np
-
+import math
 import safeopt
 
 
 # Measurement noise
-noise_var = 0.05 ** 2
+noise_var = 0.025 ** 2
 
 # Bounds on the inputs variable
 bounds = [(-5., 5.), (-5., 5.), (-5., 5.)]   # riguarda gli input
@@ -18,7 +17,9 @@ kernel = GPy.kern.RBF(input_dim=len(bounds), variance=2., lengthscale=1.0,
 
 # Initial safe point
 x0 = np.zeros((1, len(bounds)))
-
+print(x0)
+x0 = np.array([[0.3, -0.3, 0]])
+print(x0)
 
 # Generate function with safe initial point at x=0
 def sample_safe_fun():
@@ -28,6 +29,9 @@ def sample_safe_fun():
             break
     return fun
 
+def mia_funzione(arr):
+
+    return math.cos(1.5+arr[0]+arr[1]+arr[2])
 
 # Define the objective function
 fun = sample_safe_fun()
@@ -44,10 +48,11 @@ i=0
 while i<20:
     x_next = opt.optimize()
     # Get a measurement from the real system
-    y_meas = fun(x_next)
+    print(x_next)
+    y_meas = mia_funzione(x_next)
     # Add this to the GP model
     opt.add_new_data_point(x_next, y_meas)
     i+=1
     print(x_next, y_meas)
-
+print("massimo")
 print(opt.get_maximum())

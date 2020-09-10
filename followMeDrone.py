@@ -36,15 +36,14 @@ drawer = GuiDrawer()
 current_pid, current_parameter = pidX, 'p'
 
 aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
-parameters = aruco.DetectorParameters_create()
 
 # video source and calibration parameters setup
 
-# video_capture = cv2.VideoCapture(0)
-drone = Tello()
-drone.connect()
-battery_level = drone.get_battery()
-drone.streamon()
+video_capture = cv2.VideoCapture(0)
+#drone = Tello()
+#drone.connect()
+#battery_level = drone.get_battery()
+#drone.streamon()
 
 # detection
 
@@ -88,15 +87,15 @@ drone_dist = np.array([[-1.69684883e+00],
 
 mtx, dist = drone_mtx, drone_dist
 
-detector = MarkerDetector(aruco_dict, parameters, mtx, dist)
+detector = MarkerDetector(aruco_dict, mtx, dist)
 
 # loop start
 #drone.takeoff()
 while True:
 
-    # ret, frame = video_capture.read()
+    ret, frame = video_capture.read()
 
-    frame = drone.get_frame_read().frame
+    #frame = drone.get_frame_read().frame
 
     image, horizontal_error, vertical_error, frontal_error = detector.detect_and_compute_error_values(frame,
                                                                                                       SET_POINT_X,
@@ -113,14 +112,14 @@ while True:
         action_z = cz.compute_action(-frontal_error)
         drawer.draw_controller_output(image, action_x, action_y, action_z)
 
-        drone.send_rc_control(0, action_z, action_y, action_x)  # turn with yaw
+        #drone.send_rc_control(0, action_z, action_y, action_x)  # turn with yaw
 
     drawer.draw_current_PID(image, current_pid, current_parameter)
     drawer.draw_setpoint(image, SET_POINT_X, SET_POINT_Y)
     if time.time() - start_time >= 5:
-        battery_level = drone.get_battery()
+        #battery_level = drone.get_battery()
         start_time = time.time()
-    drawer.draw_battery_level(image, battery_level)
+    #drawer.draw_battery_level(image, battery_level)
 
     width = 2400/3
     ratio = 16 / 9
@@ -133,8 +132,8 @@ while True:
     key_pressed = cv2.waitKey(1)
 
     if key_pressed & 0xFF == ord('q'):  # quit from script
-        drone.land()
-        drone.get_battery()
+        #drone.land()
+        #drone.get_battery()
         break
 
     else:
