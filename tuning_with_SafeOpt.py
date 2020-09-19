@@ -22,7 +22,7 @@ DRONE_SPEED_Z = 25
 
 SET_POINT_X = 960 / 2
 SET_POINT_Y = 720 / 2
-SET_POINT_Z_cm = 110
+SET_POINT_Z_cm = 180
 
 # pid section
 pidX = PID('x')
@@ -34,17 +34,17 @@ pid_safeopt_param = [0.8, 0, 0]
 pidX.set_PID_safeopt(pid_safeopt_param)
 
 # auxiliary controllers
-cx = BangBangController(SET_POINT_X, 20, 30)
-cy = BangBangController(SET_POINT_Y, 20, 30)
-cz = BangBangController(SET_POINT_Z_cm, 20, 30)
+cx = BangBangController(SET_POINT_X, 25, 30)
+cy = BangBangController(SET_POINT_Y, 25, 30)
+cz = BangBangController(SET_POINT_Z_cm, 25, 30)
 # pid keys
 pidSetter = PIDTuner(pidX, pidY, pidZ)
 drawer = GuiDrawer()
 current_pid, current_parameter = pidX, 'p'
 
 # measurements
-measure42 = measurementAssistant.MeasurementAssistant("x_axis42",5,3)
-measure33 = measurementAssistant.MeasurementAssistant("x_axis33",5,3)
+measure42 = measurementAssistant.MeasurementAssistant("x_axis42",25,3)
+measure33 = measurementAssistant.MeasurementAssistant("x_axis33",25,3)
 # safeopt assistant
 
 safeoptassistant = SafeOptTunerAssistant.Tuner(0.025 ** 2, pid_safeopt_param[0], pid_safeopt_param[1], pid_safeopt_param[2])
@@ -115,7 +115,7 @@ mtx, dist = drone_mtx, drone_dist
 detector = MarkerDetector(aruco_dict, mtx, dist)
 
 # loop start
-#drone.takeoff()
+drone.takeoff()
 while True:
 
     #ret, frame = video_capture.read()
@@ -152,12 +152,12 @@ while True:
                 target = switchTarget()
                 measure42.new_round(pid_safeopt_param)
 
-    #drone.send_rc_control(0, action_z, action_y, action_x)  # turn with yaw
+    drone.send_rc_control(0, action_z, action_y, action_x)  # turn with yaw
 
     drawer.draw_controller_output(image, action_x, action_y, action_z)
     drawer.draw_current_PID(image, current_pid, current_parameter)
     if target == 42:
-        drawer.draw_fitness_value(image,measure42.fitness())
+        drawer.draw_fitness_value(image, measure42.fitness())
     elif target == 33:
         drawer.draw_fitness_value(image, measure33.fitness())
     drawer.draw_setpoint(image, SET_POINT_X, SET_POINT_Y)
@@ -178,8 +178,8 @@ while True:
     key_pressed = cv2.waitKey(1)
 
     if key_pressed & 0xFF == ord('q'):  # quit from script
-        #drone.land()
-        #drone.get_battery()
+        drone.land()
+        drone.get_battery()
         print(safeoptassistant.get_best_param())
         break
 
