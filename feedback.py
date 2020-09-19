@@ -11,7 +11,7 @@ class MarkerDetector:
         self.mtx = mtx
         self.dist = dist
 
-    def detect(self, frame):
+    def detect(self, frame, target):
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, self.aruco_dict, parameters=self.parameters)
@@ -26,21 +26,28 @@ class MarkerDetector:
 
         length_of_axis = 0.1
         imaxis = aruco.drawDetectedMarkers(frame.copy(), corners, ids)
-
+        #print(ids, corners)
         if tvecs is not None:
-            for i in range(len(tvecs)):
-                imaxis = aruco.drawAxis(imaxis, self.mtx, self.dist, rvecs[i], tvecs[i], length_of_axis)
-                x = (corners[0][0][0][0] + corners[0][0][2][0]) / 2
-                y = (corners[0][0][0][1] + corners[0][0][2][1]) / 2
-                square_side_dimension_px = math.sqrt(math.pow(corners[0][0][3][1] - corners[0][0][0][1], 2) + math.pow(corners[0][0][3][0] - corners[0][0][0][0], 2))
+            target_id = None
+            for i in range(len(ids)):
+                if ids[i] == target:
+                    target_id = i
+
+            if target_id is not None:
+                imaxis = aruco.drawAxis(imaxis, self.mtx, self.dist, rvecs[target_id], tvecs[target_id], length_of_axis)
+                x = (corners[target_id][0][0][0] + corners[target_id][0][2][0]) / 2
+                y = (corners[target_id][0][0][1] + corners[target_id][0][2][1]) / 2
+                square_side_dimension_px = math.sqrt(math.pow(corners[target_id][0][3][1] - corners[target_id][0][0][1], 2) + math.pow(corners[target_id][0][3][0] - corners[target_id][0][0][0], 2))
 
                 return imaxis, x, y, square_side_dimension_px
+            else:
+                return frame, None, None, None
         else:
             return frame, None, None, None
 
-    def detect_and_compute_error_values(self, frame, set_point_x, set_point_y, set_point_z):
+    def detect_and_compute_error_values(self, frame, set_point_x, set_point_y, set_point_z, target):
 
-        imaxis, x, y, square_side_dimension_px = self.detect(frame)
+        imaxis, x, y, square_side_dimension_px = self.detect(frame, target)
         if x is not None:
             horizontal_error, vertical_error, frontal_error = compute_error_values(x, y, square_side_dimension_px, set_point_x, set_point_y, set_point_z)
             return imaxis, horizontal_error, vertical_error, frontal_error

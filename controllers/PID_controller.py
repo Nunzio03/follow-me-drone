@@ -28,6 +28,12 @@ class PIDController:
         elif parameter == "d":
             self.kd += value
 
+    def set_PID_safeopt(self, param):
+        self.kp = param[0]
+        self.ki = param[1]
+        self.kd = param[2]
+
+
     def set_gain(self, parameter, value):
         if parameter == "p":
             self.kp = value

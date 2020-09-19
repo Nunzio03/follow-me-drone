@@ -30,3 +30,7 @@ class GuiDrawer:
     @staticmethod
     def draw_battery_level(image, battery):
         cv2.putText(image, "battery:" + str(battery).strip("\r\n")+"%", (10, 700), 5, 1, (0, 255, 0))
+
+    @staticmethod
+    def draw_fitness_value(image, fitness):
+        cv2.putText(image, "fitness:" + str(fitness), (700, 700), 5, 1, (0, 255, 0))

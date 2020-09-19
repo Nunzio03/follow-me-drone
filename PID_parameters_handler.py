@@ -1,4 +1,4 @@
-from PID_controller import PIDController
+from controllers.PID_controller import PIDController
 
 
 class PIDTuner:
