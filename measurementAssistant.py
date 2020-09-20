@@ -1,6 +1,7 @@
 import time
 import os
 
+
 class MeasurementAssistant:
     def __init__(self, name, tolerance, t_threshold):
         localtime = time.localtime()
@@ -42,9 +43,12 @@ class MeasurementAssistant:
 
         self.arrived_routine(value, t)
 
-    def new_round(self, parameters):
+    def new_round(self, parameters, success):
         f = open("measurement logs/"+self.folder+"/"+self.filename+".csv", "a")
-        f.write("Fitness:" +str(self.fitness())+'\n')
+        if success:
+            f.write("Fitness:" +str(self.fitness())+'\n')
+        else:
+            f.write("Fitness:" + str(0) + '\n')
         f.close()
         self.round_counter += 1
         self.filename = "round" + str(self.round_counter)
@@ -54,7 +58,6 @@ class MeasurementAssistant:
         f.close()
         self.x, self.y = list(), list()
         self.start_round_time = time.time()
-
 
     def compute_abs_mean(self):
 
@@ -74,7 +77,7 @@ class MeasurementAssistant:
 
     def is_in_setpoint(self):
         if self.in_position:
-            print("elapsed:", time.time() - self.start_arrived_time)
+
             if time.time() - self.start_arrived_time >= self.t_threshold:
                 self.in_position = False
                 return True
@@ -97,8 +100,7 @@ class MeasurementAssistant:
                 self.n_overshoots +=1
             self.last_sign = sign
 
-
     def fitness(self):
         elapsed_time = time.time() - self.start_round_time
-        a = 0.5*elapsed_time+0.3*self.n_overshoots+0.2*self.compute_abs_sum()
+        a = 0.7*elapsed_time+0.2*self.n_overshoots+0.1*self.compute_abs_sum()
         return 8000/(80+a)
