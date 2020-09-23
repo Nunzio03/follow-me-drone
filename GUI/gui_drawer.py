@@ -34,3 +34,7 @@ class GuiDrawer:
     @staticmethod
     def draw_fitness_value(image, fitness):
         cv2.putText(image, "fitness:" + str(fitness), (700, 700), 5, 1, (0, 255, 0))
+
+    @staticmethod
+    def draw_expiration_time(image, t):
+        cv2.putText(image, "elapsed:" + str(t), (700, 350), 5, 1, (0, 255, 0))

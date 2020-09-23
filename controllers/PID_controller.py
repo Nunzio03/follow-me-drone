@@ -32,7 +32,11 @@ class PIDController:
         self.kp = param[0]
         self.ki = param[1]
         self.kd = param[2]
-
+        self.previous_error = 0
+        self.integral = 0
+        self.start_time = time.time()
+        self.is_in_saturation = False
+        self.previous_output = 0
 
     def set_gain(self, parameter, value):
         if parameter == "p":
@@ -66,4 +70,4 @@ class PIDController:
         return output
 
     def __str__(self):
-        return f'{self.identifier} :[ P:{round(self.kp, 2)}, I:{round(self.ki,2)}, D:{round(self.kd,2)} ]'
+        return f'{self.identifier} :[ P:{self.kp}, I:{self.ki}, D:{self.kd} ]'

@@ -9,8 +9,7 @@ from controllers.PID_controller import PIDController as PID
 from feedback import MarkerDetector
 from PID_parameters_handler import PIDTuner
 from controllers.BangBang_controller import BangBangController
-import measurementAssistant
-import SafeOptTunerAssistant
+from tuning import measurementAssistant, SafeOptTunerAssistant
 
 start_time = time.time()
 
@@ -19,10 +18,9 @@ DRONE_SPEED_Y = 30
 DRONE_SPEED_Z = 25
 
 
-
 SET_POINT_X = 960 / 2
 SET_POINT_Y = 720 / 2
-SET_POINT_Z_cm = 180
+SET_POINT_Z_cm = 200
 
 # pid section
 pidX = PID('x')
@@ -30,25 +28,37 @@ pidY = PID('y')
 pidZ = PID('z')
 
 # pid setup
-pid_safeopt_param = [0.8, 0, 0]
+pid_safeopt_param = [0.3, 0.02, 0.3]
+pid_safeopt_max = [0.8, 0.2, 0.4]
+
+# pid_safeopt_param = [0.61385034, 0.0002, 0.289428]
+# (ObsAr([0.66659107, 0.02      , 0.3       ]), ObsAr([16.12644424]))
+# (ObsAr([0.61385034, 0.02      , 0.289428  ]), ObsAr([18.31138782]))
+# (ObsAr([0.72632365, 0.002     , 0.13493126]), ObsAr([18.8394745]))
+# (ObsAr([0.57531093, 0.02     , 0.17326167]), ObsAr([20.36025728]))
 pidX.set_PID_safeopt(pid_safeopt_param)
 
 # auxiliary controllers
-cx = BangBangController(SET_POINT_X, 25, 30)
-cy = BangBangController(SET_POINT_Y, 25, 30)
-cz = BangBangController(SET_POINT_Z_cm, 25, 30)
+cx = BangBangController(SET_POINT_X, 25, DRONE_SPEED_X)
+cy = BangBangController(SET_POINT_Y, 25, DRONE_SPEED_Y)
+cz = BangBangController(SET_POINT_Z_cm, 25, DRONE_SPEED_Z)
 # pid keys
 pidSetter = PIDTuner(pidX, pidY, pidZ)
 drawer = GuiDrawer()
 current_pid, current_parameter = pidX, 'p'
 
 # measurements
-measure42 = measurementAssistant.MeasurementAssistant("x_axis42",25,3)
-measure33 = measurementAssistant.MeasurementAssistant("x_axis33",25,3)
+measure42 = measurementAssistant.MeasurementAssistant("x_axis42", 25, 3, pid_safeopt_param)
+measure33 = measurementAssistant.MeasurementAssistant("x_axis33", 25, 3, pid_safeopt_param)
 # safeopt assistant
 
-safeoptassistant = SafeOptTunerAssistant.Tuner(0.025 ** 2, pid_safeopt_param[0], pid_safeopt_param[1], pid_safeopt_param[2])
+safeoptassistant = SafeOptTunerAssistant.Tuner(0.0025 ** 2, pid_safeopt_param[0], pid_safeopt_param[1],
+                                               pid_safeopt_param[2], pid_safeopt_max[0], pid_safeopt_max[1],
+                                               pid_safeopt_max[2])
 target = 33
+tuning_mode = False
+last_fitness = 0
+
 
 def switchTarget():
     if target == 33:
@@ -57,14 +67,13 @@ def switchTarget():
         return 33
 
 
+success = False
+
 aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
-
-
-
 
 # video source and calibration parameters setup
 
-#video_capture = cv2.VideoCapture(0)
+# video_capture = cv2.VideoCapture(0)
 drone = Tello()
 drone.connect()
 battery_level = drone.get_battery()
@@ -118,39 +127,52 @@ detector = MarkerDetector(aruco_dict, mtx, dist)
 drone.takeoff()
 while True:
 
-    #ret, frame = video_capture.read()
+    # ret, frame = video_capture.read()
 
     frame = drone.get_frame_read().frame
 
     image, horizontal_error, vertical_error, frontal_error = detector.detect_and_compute_error_values(frame,
                                                                                                       SET_POINT_X,
                                                                                                       SET_POINT_Y,
-                                                                                                      SET_POINT_Z_cm, target)
-    action_x, action_y, action_z = 0,0,0
+                                                                                                      SET_POINT_Z_cm,
+                                                                                                      target)
+    action_x, action_y, action_z = 50, 0, 0
 
     if horizontal_error is not None:
         drawer.draw_errors(image, horizontal_error, vertical_error, frontal_error, frontal_error+SET_POINT_Z_cm)
-        #action_x = int(-pidX.compute_action(horizontal_error))
-        #action_y = int(pidY.compute_action(vertical_error))
-        #action_z = int(pidZ.compute_action(frontal_error))
-        action_x = cx.compute_action(horizontal_error)
+
+        # action_y = int(pidY.compute_action(vertical_error))
+        # action_z = int(pidZ.compute_action(frontal_error))
+
         action_y = cy.compute_action(-vertical_error)
         action_z = cz.compute_action(-frontal_error)
+
+        if tuning_mode:
+            action_x = int(-pidX.compute_action(horizontal_error))
+        else:
+            action_x = cx.compute_action(horizontal_error)
 
         if target == 33:
             measure33.write_measurement(horizontal_error)
             if measure33.is_in_setpoint():
                 target = switchTarget()
-                measure33.new_round(pid_safeopt_param)
+                start_time = time.time()
+                measure33.new_round(pid_safeopt_param, last_fitness)
+                measure42.new_round(pid_safeopt_param, last_fitness)
+                tuning_mode = True
+                last_fitness = 0
 
         elif target == 42:
+
+            print(time.time() - start_time)
             measure42.write_measurement(horizontal_error)
             if measure42.is_in_setpoint():
-                safeoptassistant.optimize(100000 / (0.00001 + measure42.compute_abs_sum()))
+                last_fitness = measure42.fitness()
+                safeoptassistant.optimize(last_fitness)
                 pid_safeopt_param = safeoptassistant.get_param()
                 pidX.set_PID_safeopt(pid_safeopt_param)
                 target = switchTarget()
-                measure42.new_round(pid_safeopt_param)
+                tuning_mode = False
 
     drone.send_rc_control(0, action_z, action_y, action_x)  # turn with yaw
 
@@ -158,14 +180,24 @@ while True:
     drawer.draw_current_PID(image, current_pid, current_parameter)
     if target == 42:
         drawer.draw_fitness_value(image, measure42.fitness())
-    elif target == 33:
-        drawer.draw_fitness_value(image, measure33.fitness())
+    # elif target == 33:
+        # drawer.draw_fitness_value(image, measure33.fitness())
     drawer.draw_setpoint(image, SET_POINT_X, SET_POINT_Y)
-
     if time.time() - start_time >= 5:
         battery_level = drone.get_battery()
+
+    if time.time() - start_time >= 15:
         start_time = time.time()
+        if target == 42:
+            safeoptassistant.optimize(0)
+            pid_safeopt_param = safeoptassistant.get_param()
+            pidX.set_PID_safeopt(pid_safeopt_param)
+            target = switchTarget()
+            tuning_mode = False
+            last_fitness = 0
+
     drawer.draw_battery_level(image, battery_level)
+    drawer.draw_expiration_time(image, time.time()-start_time)
 
     width = 2200/2
     ratio = 16 / 9
@@ -182,8 +214,3 @@ while True:
         drone.get_battery()
         print(safeoptassistant.get_best_param())
         break
-
-    else:
-        current_pid = pidSetter.get_pid(key_pressed)
-        current_parameter = pidSetter.get_parameter(key_pressed)
-        pidSetter.tune(key_pressed)

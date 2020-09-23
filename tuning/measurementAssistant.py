@@ -3,12 +3,14 @@ import os
 
 
 class MeasurementAssistant:
-    def __init__(self, name, tolerance, t_threshold):
+    def __init__(self, name, tolerance, t_threshold, parameters0):
         localtime = time.localtime()
         self.folder = name+str(localtime.tm_hour)+str(localtime.tm_min)
         self.name = name
         self.tolerance = tolerance
         self.t_threshold = t_threshold
+        self.previousParameters = parameters0
+
         self.x, self.y = list(), list()
         self.in_position = False
         self.n_overshoots = 0
@@ -16,16 +18,20 @@ class MeasurementAssistant:
         self.start_round_time = time.time()
         self.round_counter = 0
         self.filename = "round" + str(self.round_counter)
+        self.parameter_fitness_filename = "plot.csv"
+
         try:
-            os.chdir("measurement logs")
+            os.chdir("tuning/measurement logs")
+            print(os.getcwd())
         except:
             pass
         try:
             os.mkdir(self.folder)
+            print(os.getcwd())
         except:
             pass
         try:
-            os.chdir("..")
+            os.chdir("../..")
             print(os.getcwd())
         except:
             pass
@@ -35,7 +41,7 @@ class MeasurementAssistant:
         self.x.append(t)
         self.y.append(value)
 
-        f = open("measurement logs/"+self.folder+"/"+self.filename+".csv", "a")
+        f = open("tuning/measurement logs/"+self.folder+"/"+self.filename+".csv", "a")
         f.write(str(t)+";"+ str(value)+ '\n')
         f.close()
 
@@ -43,21 +49,25 @@ class MeasurementAssistant:
 
         self.arrived_routine(value, t)
 
-    def new_round(self, parameters, success):
-        f = open("measurement logs/"+self.folder+"/"+self.filename+".csv", "a")
-        if success:
-            f.write("Fitness:" +str(self.fitness())+'\n')
-        else:
-            f.write("Fitness:" + str(0) + '\n')
+    def new_round(self, parameters, fitness):
+
+        f = open("tuning/measurement logs/"+self.folder+"/"+self.parameter_fitness_filename, "a")
+        f.write(str(self.previousParameters[0])+","+str(self.previousParameters[1])+","+str(self.previousParameters[2])
+                +","+str(fitness)+';'+'\n')
+        f = open("tuning/measurement logs/"+self.folder+"/"+self.filename+".csv", "a")
+
+        f.write("Fitness:" +str(fitness)+'\n')
+
         f.close()
         self.round_counter += 1
         self.filename = "round" + str(self.round_counter)
-        f = open("measurement logs/" + self.folder + "/" + self.filename + ".csv", "a")
+        f = open("tuning/measurement logs/" + self.folder + "/" + self.filename + ".csv", "a")
         f.write("______________________NEW ROUND________________________"+'\n')
         f.write(str(parameters) + '\n')
         f.close()
         self.x, self.y = list(), list()
         self.start_round_time = time.time()
+        self.previousParameters = parameters
 
     def compute_abs_mean(self):
 
