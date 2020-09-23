@@ -178,11 +178,11 @@ while True:
 
     drawer.draw_controller_output(image, action_x, action_y, action_z)
     drawer.draw_current_PID(image, current_pid, current_parameter)
+    drawer.draw_setpoint(image, SET_POINT_X, SET_POINT_Y)
+
     if target == 42:
         drawer.draw_fitness_value(image, measure42.fitness())
-    # elif target == 33:
-        # drawer.draw_fitness_value(image, measure33.fitness())
-    drawer.draw_setpoint(image, SET_POINT_X, SET_POINT_Y)
+
     if time.time() - start_time >= 5:
         battery_level = drone.get_battery()
 
