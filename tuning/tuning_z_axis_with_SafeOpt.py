@@ -22,7 +22,7 @@ SET_POINT_Y = 720 / 2
 SET_POINT_Z_cm = 200
 
 # pid section
-pidX = PID('x')
+pidZ = PID('z')
 
 # pid setup
 pid_safeopt_param = [0.3, 0.02, 0.3]
@@ -34,7 +34,7 @@ pid_safeopt_max = [0.8, 0.2, 0.4]
 # (ObsAr([0.72632365, 0.002     , 0.13493126]), ObsAr([18.8394745]))
 # (ObsAr([0.57531093, 0.02     , 0.17326167]), ObsAr([20.36025728]))
 # (ObsAr([1.        , 0.        , 0.54845742]), ObsAr([18.35382209])) pid_safeopt_max = [0.8, 0.2, 0.4]
-pidX.set_PID_safeopt(pid_safeopt_param)
+pidZ.set_PID_safeopt(pid_safeopt_param)
 # auxiliary controllers
 cx = BangBangController(SET_POINT_X, 25, DRONE_SPEED_X)
 cy = BangBangController(SET_POINT_Y, 25, DRONE_SPEED_Y)
@@ -42,27 +42,27 @@ cz = BangBangController(SET_POINT_Z_cm, 25, DRONE_SPEED_Z)
 # pid keys
 
 drawer = GuiDrawer()
-current_pid, current_parameter = pidX, 'p'
+current_pid, current_parameter = pidZ, 'p'
 
 # measurements
-measure42 = measurementAssistant.MeasurementAssistant("x_axis42", 25, 3, pid_safeopt_param)
-measure33 = measurementAssistant.MeasurementAssistant("x_axis33", 25, 3, pid_safeopt_param)
+measure42 = measurementAssistant.MeasurementAssistant("z_axis42", 25, 3, pid_safeopt_param)
+measure33 = measurementAssistant.MeasurementAssistant("z_axis33", 25, 3, pid_safeopt_param)
 # safeopt assistant
 
 safeoptassistant = SafeOptTunerAssistant.Tuner(0.0025 ** 2, pid_safeopt_param[0], pid_safeopt_param[1],
                                                pid_safeopt_param[2], pid_safeopt_max[0], pid_safeopt_max[1],
                                                pid_safeopt_max[2])
-target = 33
+target = 42
 tuning_mode = False
 last_fitness = 0
 success = False
 
 
-def switchTarget():
-    if target == 33:
-        return 42
-    elif target == 42:
-        return 33
+def switchSetPoint():
+    if SET_POINT_Z_cm == 200:
+        return 150
+    elif SET_POINT_Z_cm == 150:
+        return 200
 
 
 aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
@@ -120,7 +120,7 @@ mtx, dist = drone_mtx, drone_dist
 detector = MarkerDetector(aruco_dict, mtx, dist)
 
 # loop start
-# drone.takeoff()
+#drone.takeoff()
 while True:
 
     # ret, frame = video_capture.read()
@@ -132,33 +132,33 @@ while True:
                                                                                                       SET_POINT_Y,
                                                                                                       SET_POINT_Z_cm,
                                                                                                       target)
-    action_x, action_y, action_z = 30, 0, 0
+    action_x, action_y, action_z = 0, 0, 0
 
     if horizontal_error is not None:
         drawer.draw_errors(image, horizontal_error, vertical_error, frontal_error, frontal_error+SET_POINT_Z_cm)
 
         # action_y = int(pidY.compute_action(vertical_error))
         # action_z = int(pidZ.compute_action(frontal_error))
-
+        action_x = cx.compute_action(horizontal_error)
         action_y = cy.compute_action(-vertical_error)
-        action_z = cz.compute_action(-frontal_error)
+        #action_z = cz.compute_action(-frontal_error)
 
         if tuning_mode:
-            action_x = int(-pidX.compute_action(horizontal_error))
+            action_z = int(pidZ.compute_action(frontal_error))
         else:
-            action_x = cx.compute_action(horizontal_error)
+            action_z = cz.compute_action(frontal_error)
 
-        if target == 33:
-            measure33.write_measurement(horizontal_error)
+        if SET_POINT_Z_cm == 200:
+            measure33.write_measurement(frontal_error)
             if measure33.is_in_setpoint():
-                target = switchTarget()
+                target = switchSetPoint()
                 start_time = time.time()
                 measure33.new_round(pid_safeopt_param, last_fitness)
                 measure42.new_round(pid_safeopt_param, last_fitness)
                 tuning_mode = True
                 last_fitness = 0
 
-        elif target == 42:
+        elif SET_POINT_Z_cm == 150:
 
             print(time.time() - start_time)
             measure42.write_measurement(horizontal_error)
@@ -166,22 +166,22 @@ while True:
                 last_fitness = measure42.fitness()
                 safeoptassistant.optimize(last_fitness)
                 pid_safeopt_param = safeoptassistant.get_param()
-                pidX.set_PID_safeopt(pid_safeopt_param)
-                target = switchTarget()
+                pidZ.set_PID_safeopt(pid_safeopt_param)
+                target = switchSetPoint()
                 tuning_mode = False
 
-    if time.time() - start_time >= 15:
+    if time.time() - start_time >= 7:
         start_time = time.time()
-        if target == 42:
+        if SET_POINT_Z_cm == 150:
             safeoptassistant.optimize(0)
             pid_safeopt_param = safeoptassistant.get_param()
-            pidX.set_PID_safeopt(pid_safeopt_param)
-            target = switchTarget()
+            pidZ.set_PID_safeopt(pid_safeopt_param)
+            target = switchSetPoint()
             tuning_mode = False
             last_fitness = 0
 
     drone.send_rc_control(0, action_z, action_y, action_x)  # turn with yaw
-    if target == 42:
+    if SET_POINT_Z_cm == 150:
         drawer.draw_fitness_value(image, measure42.fitness())
 
     drawer.draw_controller_output(image, action_x, action_y, action_z)

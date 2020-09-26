@@ -17,10 +17,9 @@ DRONE_SPEED_Y = 30
 DRONE_SPEED_Z = 25
 
 
-
 SET_POINT_X = 960 / 2
 SET_POINT_Y = 720 / 2
-SET_POINT_Z_cm = 110
+SET_POINT_Z_cm = 180
 
 # pid section
 pidX = PID('x')
@@ -28,12 +27,12 @@ pidY = PID('y')
 pidZ = PID('z')
 
 # pid setup
-pidX.kp = 0.8
-
+pidX.set_PID_safeopt([0.57531093, 0.02, 0.17326167])
+pidY.set_PID_safeopt([0.6, 0.01, 0.17326167])
 # auxiliary controllers
 cx = BangBangController(SET_POINT_X, 20, 30)
 cy = BangBangController(SET_POINT_Y, 20, 30)
-cz = BangBangController(SET_POINT_Z_cm, 20, 30)
+cz = BangBangController(SET_POINT_Z_cm, 20, 25)
 # pid keys
 tuner = PIDTuner(pidX, pidY, pidZ)
 drawer = GuiDrawer()
@@ -94,32 +93,34 @@ mtx, dist = drone_mtx, drone_dist
 detector = MarkerDetector(aruco_dict, mtx, dist)
 
 # loop start
-drone.takeoff()
+# drone.takeoff()
 while True:
 
-    #ret, frame = video_capture.read()
+    # ret, frame = video_capture.read()
 
     frame = drone.get_frame_read().frame
 
     image, horizontal_error, vertical_error, frontal_error = detector.detect_and_compute_error_values(frame,
                                                                                                       SET_POINT_X,
                                                                                                       SET_POINT_Y,
-                                                                                                      SET_POINT_Z_cm)
+                                                                                                      SET_POINT_Z_cm,
+                                                                                                      42)
 
+    action_z, action_y, action_x = 0, 0, 0
     if horizontal_error is not None:
         drawer.draw_errors(image, horizontal_error, vertical_error, frontal_error, frontal_error+SET_POINT_Z_cm)
         action_x = int(-pidX.compute_action(horizontal_error))
-        #action_y = int(pidY.compute_action(vertical_error))
-        #action_z = int(pidZ.compute_action(frontal_error))
-        #action_x = cx.compute_action(horizontal_error)
-        action_y = cy.compute_action(-vertical_error)
-        action_z = cz.compute_action(-frontal_error)
+        action_y = int(pidY.compute_action(vertical_error))
+        action_z = int(pidZ.compute_action(frontal_error))
+        # action_x = cx.compute_action(horizontal_error)
+        # action_y = cy.compute_action(-vertical_error)
+        # action_z = cz.compute_action(-frontal_error)
         drawer.draw_controller_output(image, action_x, action_y, action_z)
 
         drone.send_rc_control(0, action_z, action_y, action_x)  # turn with yaw
 
     drawer.draw_current_PID(image, current_pid, current_parameter)
-    drawer.draw_setpoint(image, SET_POINT_X, SET_POINT_Y)
+    drawer.draw_setpoint(image, SET_POINT_X, SET_POINT_Y, SET_POINT_Z_cm)
     if time.time() - start_time >= 5:
         battery_level = drone.get_battery()
         start_time = time.time()

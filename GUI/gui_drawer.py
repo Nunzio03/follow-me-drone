@@ -14,8 +14,9 @@ class GuiDrawer:
         cv2.putText(image, "distance:" + str(distance), (50, 80), 5, 1, (0, 125, 255))
 
     @staticmethod
-    def draw_setpoint(image, setpointX, setpointY):
+    def draw_setpoint(image, setpointX, setpointY, setpointZ):
         cv2.circle(image, (int(setpointX), int(setpointY)), 12, (0, 0, 255), 3)
+        cv2.putText(image, "setPoint Z:" + str(setpointZ) + "cm", (10, 260), 5, 1, (0, 255, 0))
 
     @staticmethod
     def draw_current_PID(image, current_pid, current_parameter):

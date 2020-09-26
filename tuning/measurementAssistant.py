@@ -5,7 +5,7 @@ import os
 class MeasurementAssistant:
     def __init__(self, name, tolerance, t_threshold, parameters0):
         localtime = time.localtime()
-        self.folder = name+str(localtime.tm_hour)+str(localtime.tm_min)
+        self.folder = name+str(localtime.tm_mday)+str(localtime.tm_mon)+"_"+str(localtime.tm_hour)+str(localtime.tm_min)
         self.name = name
         self.tolerance = tolerance
         self.t_threshold = t_threshold
@@ -16,23 +16,28 @@ class MeasurementAssistant:
         self.n_overshoots = 0
         self.last_sign = None
         self.start_round_time = time.time()
+        self.time_normalization = self.start_round_time
         self.round_counter = 0
         self.filename = "round" + str(self.round_counter)
         self.parameter_fitness_filename = "plot.csv"
-
+        print(os.getcwd())
         try:
-            os.chdir("tuning/measurement logs")
+            os.chdir("measurement logs")
             print(os.getcwd())
+            print("i'm in logs")
+
         except:
             pass
         try:
             os.mkdir(self.folder)
             print(os.getcwd())
+            print("i'm in my folder")
         except:
             pass
         try:
-            os.chdir("../..")
+            os.chdir("..")
             print(os.getcwd())
+            print("i'm in the project folder")
         except:
             pass
 
@@ -41,8 +46,8 @@ class MeasurementAssistant:
         self.x.append(t)
         self.y.append(value)
 
-        f = open("tuning/measurement logs/"+self.folder+"/"+self.filename+".csv", "a")
-        f.write(str(t)+";"+ str(value)+ '\n')
+        f = open("measurement logs/"+self.folder+"/"+self.filename+".csv", "a")
+        f.write(str(t-self.time_normalization)+";"+ str(value)+ '\n')
         f.close()
 
         self.count_oveshoots(value)
@@ -51,17 +56,17 @@ class MeasurementAssistant:
 
     def new_round(self, parameters, fitness):
 
-        f = open("tuning/measurement logs/"+self.folder+"/"+self.parameter_fitness_filename, "a")
+        f = open("measurement logs/"+self.folder+"/"+self.parameter_fitness_filename, "a")
         f.write(str(self.previousParameters[0])+","+str(self.previousParameters[1])+","+str(self.previousParameters[2])
                 +","+str(fitness)+';'+'\n')
-        f = open("tuning/measurement logs/"+self.folder+"/"+self.filename+".csv", "a")
+        f = open("measurement logs/"+self.folder+"/"+self.filename+".csv", "a")
 
         f.write("Fitness:" +str(fitness)+'\n')
 
         f.close()
         self.round_counter += 1
         self.filename = "round" + str(self.round_counter)
-        f = open("tuning/measurement logs/" + self.folder + "/" + self.filename + ".csv", "a")
+        f = open("measurement logs/" + self.folder + "/" + self.filename + ".csv", "a")
         f.write("______________________NEW ROUND________________________"+'\n')
         f.write(str(parameters) + '\n')
         f.close()

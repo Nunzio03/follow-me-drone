@@ -34,6 +34,6 @@ class PIDTuner:
         if key & 0xFF == ord("0"):
             self.current_pid.set_gain(self.current_parameter, 0)
         elif key & 0xFF == ord("8"):
-            self.current_pid.increase_gain(self.current_parameter, 0.01)
+            self.current_pid.increase_gain(self.current_parameter, 0.001)
         elif key & 0xFF == ord("2"):
-            self.current_pid.increase_gain(self.current_parameter, -0.01)
+            self.current_pid.increase_gain(self.current_parameter, -0.001)
