@@ -15,13 +15,21 @@ class PlotMeasurements (threading.Thread):
         self.ref = ref
         self.nome = nome
         plt.ion()
+        font = {'family': 'normal',
+                'weight': 'bold',
+                'size': 12}
+
+        plt.rc('font', **font)
+
 
     def plot(self):
 
-        plt.plot(self.t, self.x, color="red", label="x axis")
-        plt.plot(self.t, self.y, color="yellow", label="y_axis")
+        plt.plot(self.t, self.x, color=(1,0.1,0.1), label="x axis")
+        plt.plot(self.t, self.y, color=(0.1,0.5,0.2,1), label="y_axis")
         plt.plot(self.t, self.z, color="blue", label="z_axis")
         plt.plot(self.t, self.ref, color="black", label="reference")
+        plt.xlabel("Time [s]")
+        plt.ylabel("Error [cm]")
         plt.legend(loc='best')
 
     def run(self):
