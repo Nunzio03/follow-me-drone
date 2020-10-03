@@ -1,5 +1,27 @@
 import time
 import os
+import matplotlib.pyplot as plt
+from drawnow import *
+import threading
+
+
+class PlotMeasurements (threading.Thread):
+    def __init__(self, nome, x, y):
+        threading.Thread.__init__(self)
+        self.x = x
+        self.y = y
+        self.nome = nome
+        plt.ion()
+
+    def plot(self):
+
+        plt.plot(self.x, self.y)
+
+    def run(self):
+
+        while True:
+
+            drawnow(self.plot)
 
 
 class MeasurementAssistant:
@@ -12,6 +34,7 @@ class MeasurementAssistant:
         self.previousParameters = parameters0
 
         self.x, self.y = list(), list()
+
         self.in_position = False
         self.n_overshoots = 0
         self.last_sign = None
@@ -58,7 +81,7 @@ class MeasurementAssistant:
 
         f = open("measurement logs/"+self.folder+"/"+self.parameter_fitness_filename, "a")
         f.write(str(self.previousParameters[0])+","+str(self.previousParameters[1])+","+str(self.previousParameters[2])
-                +","+str(fitness)+';'+'\n')
+                +","+str(fitness)+'\n')
         f = open("measurement logs/"+self.folder+"/"+self.filename+".csv", "a")
 
         f.write("Fitness:" +str(fitness)+'\n')
@@ -70,7 +93,8 @@ class MeasurementAssistant:
         f.write("______________________NEW ROUND________________________"+'\n')
         f.write(str(parameters) + '\n')
         f.close()
-        self.x, self.y = list(), list()
+        self.x.clear(), self.y.clear()
+
         self.start_round_time = time.time()
         self.previousParameters = parameters
 

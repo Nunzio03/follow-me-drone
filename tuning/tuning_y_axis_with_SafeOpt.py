@@ -21,7 +21,7 @@ DRONE_SPEED_Z = 25
 
 SET_POINT_X = 960 / 2
 SET_POINT_Y = 720 / 2
-SET_POINT_Z_cm = 170
+SET_POINT_Z_cm = 310
 
 # pid section
 pidX = PID('x')
@@ -29,7 +29,7 @@ pidY = PID('y')
 pidZ = PID('z')
 
 # pid setup
-pid_safeopt_param = [1.0, 0.0665343285453978, 0.7]
+pid_safeopt_param = [0.5, 0.002, 0.002]
 pid_safeopt_max = [1, 0.2, 0.7]
 
 # pid_safeopt_param = [0.61385034, 0.0002, 0.289428]
@@ -43,7 +43,7 @@ pidY.set_PID_safeopt(pid_safeopt_param)
 # auxiliary controllers
 cx = BangBangController(SET_POINT_X, 25, DRONE_SPEED_X)
 cy = BangBangController(SET_POINT_Y, 25, DRONE_SPEED_Y)
-cz = BangBangController(SET_POINT_Z_cm, 25, DRONE_SPEED_Z)
+cz = BangBangController(SET_POINT_Z_cm, 50, DRONE_SPEED_Z)
 # pid keys
 pidSetter = PIDTuner(pidX, pidY, pidZ)
 drawer = GuiDrawer()
@@ -126,7 +126,7 @@ mtx, dist = drone_mtx, drone_dist
 detector = MarkerDetector(aruco_dict, mtx, dist)
 
 # loop start
-drone.takeoff()
+# drone.takeoff()
 while True:
 
     # ret, frame = video_capture.read()
@@ -138,7 +138,7 @@ while True:
                                                                                                       SET_POINT_Y,
                                                                                                       SET_POINT_Z_cm,
                                                                                                       target)
-    if target == 33:
+    if target == 33 and drone.get_height():
         action_x, action_y, action_z = 0, 30, 0
     elif target == 42:
         action_x, action_y, action_z = 0, -30, 0
@@ -181,7 +181,7 @@ while True:
                 target = switchTarget()
                 tuning_mode = False
 
-    if time.time() - start_time >= 8:
+    if time.time() - start_time >= 15:
         start_time = time.time()
         if target == 42:
             safeoptassistant.optimize(0)

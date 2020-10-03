@@ -120,7 +120,7 @@ mtx, dist = drone_mtx, drone_dist
 detector = MarkerDetector(aruco_dict, mtx, dist)
 
 # loop start
-# drone.takeoff()
+drone.takeoff()
 while True:
 
     # ret, frame = video_capture.read()

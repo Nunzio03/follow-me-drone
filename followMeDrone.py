@@ -9,8 +9,11 @@ from controllers.PID_controller import PIDController as PID
 from feedback import MarkerDetector
 from PID_parameters_handler import PIDTuner
 from controllers.BangBang_controller import BangBangController
+from tuning.plotAssistant import PlotAssistant
 
 start_time = time.time()
+
+measurementplot= PlotAssistant()
 
 DRONE_SPEED_X = 25
 DRONE_SPEED_Y = 30
@@ -19,7 +22,7 @@ DRONE_SPEED_Z = 25
 
 SET_POINT_X = 960 / 2
 SET_POINT_Y = 720 / 2
-SET_POINT_Z_cm = 180
+SET_POINT_Z_cm = 100
 
 # pid section
 pidX = PID('x')
@@ -28,7 +31,8 @@ pidZ = PID('z')
 
 # pid setup
 pidX.set_PID_safeopt([0.57531093, 0.02, 0.17326167])
-pidY.set_PID_safeopt([0.6, 0.01, 0.17326167])
+pidY.set_PID_safeopt([0.7, 0.02, 0.27326167])
+pidZ.set_PID_safeopt([0.5, 0.02, 0.15])
 # auxiliary controllers
 cx = BangBangController(SET_POINT_X, 20, 30)
 cy = BangBangController(SET_POINT_Y, 20, 30)
@@ -95,7 +99,7 @@ detector = MarkerDetector(aruco_dict, mtx, dist)
 # loop start
 # drone.takeoff()
 while True:
-
+    action_z, action_y, action_x = 0, 0, 0
     # ret, frame = video_capture.read()
 
     frame = drone.get_frame_read().frame
@@ -106,8 +110,8 @@ while True:
                                                                                                       SET_POINT_Z_cm,
                                                                                                       42)
 
-    action_z, action_y, action_x = 0, 0, 0
     if horizontal_error is not None:
+        measurementplot.insertMeasurement(horizontal_error, vertical_error, frontal_error)
         drawer.draw_errors(image, horizontal_error, vertical_error, frontal_error, frontal_error+SET_POINT_Z_cm)
         action_x = int(-pidX.compute_action(horizontal_error))
         action_y = int(pidY.compute_action(vertical_error))
@@ -117,7 +121,7 @@ while True:
         # action_z = cz.compute_action(-frontal_error)
         drawer.draw_controller_output(image, action_x, action_y, action_z)
 
-        drone.send_rc_control(0, action_z, action_y, action_x)  # turn with yaw
+    drone.send_rc_control(0, action_z, action_y, action_x)  # turn with yaw
 
     drawer.draw_current_PID(image, current_pid, current_parameter)
     drawer.draw_setpoint(image, SET_POINT_X, SET_POINT_Y, SET_POINT_Z_cm)
@@ -126,7 +130,9 @@ while True:
         start_time = time.time()
     drawer.draw_battery_level(image, battery_level)
 
-    width = 2400/3
+    window_dimension = 0.3
+
+    width = 2400*window_dimension
     ratio = 16 / 9
     dim = (int(width), int(width / ratio))
     image = cv2.resize(image, dim, interpolation=cv2.INTER_AREA)

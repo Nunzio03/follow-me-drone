@@ -12,7 +12,7 @@ class Tuner:
         self.pmax, self.imax, self.dmax = pmax, imax, dmax
 
         # Bounds on the inputs variable
-        bounds = [(0, 1), (0, 1), (0, 1)]  # riguarda gli input
+        bounds = [(0, self.pmax), (0, self.imax), (0, self.dmax)]  # riguarda gli input
 
         # Define Kernel
         kernel = GPy.kern.RBF(input_dim=len(bounds), variance=2., lengthscale=1.0,
@@ -47,7 +47,7 @@ class Tuner:
     def get_param(self):
 
         self.x_next = self.opt.optimize()
-        return [self.x_next[0] * self.pmax, self.x_next[1] * self.imax, self.x_next[2] * self.dmax]
+        return [self.x_next[0], self.x_next[1], self.x_next[2]]
 
     def optimize(self, measurement):
         y_meas = measurement
