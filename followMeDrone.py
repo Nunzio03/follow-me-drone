@@ -22,7 +22,7 @@ DRONE_SPEED_Z = 25
 
 SET_POINT_X = 960 / 2
 SET_POINT_Y = 720 / 2
-SET_POINT_Z_cm = 100
+SET_POINT_Z_cm = 320
 
 # pid section
 pidX = PID('x')
@@ -97,7 +97,7 @@ mtx, dist = drone_mtx, drone_dist
 detector = MarkerDetector(aruco_dict, mtx, dist)
 
 # loop start
-# drone.takeoff()
+drone.takeoff()
 while True:
     action_z, action_y, action_x = 0, 0, 0
     # ret, frame = video_capture.read()
