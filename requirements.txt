@@ -2,7 +2,7 @@ cycler==0.10.0
 decorator==4.4.2
 djitellopy==1.5
 drawnow==0.72.5
-future==0.18.2
+future==0.18.3
 GPy==1.9.9
 kiwisolver==1.2.0
 matplotlib==3.2.1
