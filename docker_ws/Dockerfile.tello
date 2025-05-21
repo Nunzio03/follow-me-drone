@@ -1,0 +1,22 @@
+FROM python:3.7.17-bullseye
+
+RUN pip install GPy==1.9.9
+RUN pip install matplotlib==3.2.1
+RUN pip install cycler==0.10.0
+RUN pip install decorator==4.4.2
+RUN pip install djitellopy==1.5
+RUN pip install drawnow==0.72.5
+RUN pip install future==0.18.2
+RUN pip install kiwisolver==1.2.0
+RUN pip install safeopt==0.16
+RUN pip install numpy==1.18.4
+RUN pip install opencv-contrib-python==4.2.0.34
+RUN pip install pandas==1.0.3
+RUN pip install paramz==0.9.5
+RUN pip install Pillow==8.2.0
+RUN pip install pygame==1.9.6
+RUN pip install pyparsing==2.4.7
+RUN pip install python-dateutil==2.8.1
+RUN pip install pytz==2020.1
+RUN pip install scipy==1.5.2
+RUN pip install six==1.14.0

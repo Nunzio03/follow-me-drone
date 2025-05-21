@@ -1,0 +1,1 @@
+docker build -t tello:orientamento -f Dockerfile.tello .
