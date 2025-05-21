@@ -9,11 +9,11 @@ from controllers.PID_controller import PIDController as PID
 from feedback import MarkerDetector
 from PID_parameters_handler import PIDTuner
 from controllers.BangBang_controller import BangBangController
-from tuning.plotAssistant import PlotAssistant
+# from tuning.plotAssistant import PlotAssistant
 
 start_time = time.time()
 
-measurementplot= PlotAssistant()
+# measurementplot= PlotAssistant()
 
 DRONE_SPEED_X = 25
 DRONE_SPEED_Y = 30
@@ -22,7 +22,7 @@ DRONE_SPEED_Z = 25
 
 SET_POINT_X = 960 / 2
 SET_POINT_Y = 720 / 2
-SET_POINT_Z_cm = 320
+SET_POINT_Z_cm = 170
 
 # pid section
 pidX = PID('x')
@@ -111,7 +111,7 @@ while True:
                                                                                                       42)
 
     if horizontal_error is not None:
-        measurementplot.insertMeasurement(horizontal_error, vertical_error, frontal_error)
+        # measurementplot.insertMeasurement(horizontal_error, vertical_error, frontal_error)
         drawer.draw_errors(image, horizontal_error, vertical_error, frontal_error, frontal_error+SET_POINT_Z_cm)
         action_x = int(-pidX.compute_action(horizontal_error))
         action_y = int(pidY.compute_action(vertical_error))
